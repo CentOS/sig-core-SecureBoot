@@ -1,4 +1,4 @@
-From 66e2879890d052ee04fd0c9c35598ed6af9cc803 Mon Sep 17 00:00:00 2001
+From bc1e30ee1e7940e0e70eab9afd55b6e355ef9899 Mon Sep 17 00:00:00 2001
 From: Patrick Uiterwijk <patrick@puiterwijk.org>
 Date: Sat, 21 Jul 2018 03:27:26 +0200
 Subject: [PATCH] Add vendor_esl
@@ -7,8 +7,8 @@ Signed-off-by: Patrick Uiterwijk <patrick@puiterwijk.org>
 ---
  Makefile |  3 +++
  cert.S   | 30 ++++++++++++++++++++++++++++++
- shim.c   | 24 +++++++++++++++++++++++-
- 3 files changed, 56 insertions(+), 1 deletion(-)
+ shim.c   | 36 +++++++++++++++++++++++++++++++++++-
+ 3 files changed, 68 insertions(+), 1 deletion(-)
 
 diff --git a/Makefile b/Makefile
 index 6ece282..78688e0 100644
@@ -79,7 +79,7 @@ index cfc4525..7ad782a 100644
  	.data
  	.align	1
 diff --git a/shim.c b/shim.c
-index f8a1e67..3bb2876 100644
+index f8a1e67..d99134f 100644
 --- a/shim.c
 +++ b/shim.c
 @@ -84,14 +84,18 @@ EFI_GUID SHIM_LOCK_GUID = { 0x605dab50, 0xe046, 0x4300, {0xab, 0xb6, 0x3d, 0xd8,
@@ -101,10 +101,11 @@ index f8a1e67..3bb2876 100644
  UINT8 *vendor_dbx;
  
  /*
-@@ -1030,6 +1034,18 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
+@@ -1029,6 +1033,18 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
+ 			return status;
  		}
  
- 		/*
++		/*
 +		 * Check if there's a vendor ESL built-in
 +		 */
 +		if (vendor_esl_size &&
@@ -116,22 +117,33 @@ index f8a1e67..3bb2876 100644
 +			return status;
 +		}
 +
-+		/*
+ 		/*
  		 * And finally, check against shim's built-in key
  		 */
- 		if (vendor_cert_size &&
-@@ -1973,6 +1989,10 @@ EFI_STATUS mirror_mok_list()
+@@ -1973,6 +1989,22 @@ EFI_STATUS mirror_mok_list()
  
  		CertData->SignatureOwner = SHIM_LOCK_GUID;
  		CopyMem(p, vendor_cert, vendor_cert_size);
 +	} else if (vendor_esl_size) {
-+		// TODO: Implement adding to MOK
-+		FullDataSize = DataSize;
-+		FullData = Data;
++		FullDataSize = DataSize
++			     + vendor_esl_size
++			     ;
++		FullData = AllocatePool(FullDataSize);
++		if (!FullData) {
++			perror(L"Failed to allocate space for MokListRT\n");
++			return EFI_OUT_OF_RESOURCES;
++		}
++		p = FullData;
++
++		if (efi_status == EFI_SUCCESS && DataSize > 0) {
++			CopyMem(p, Data, DataSize);
++			p += DataSize;
++		}
++		CopyMem(p, vendor_esl, vendor_esl_size);
  	} else {
  		FullDataSize = DataSize;
  		FullData = Data;
-@@ -2606,7 +2626,7 @@ shim_init(void)
+@@ -2606,7 +2638,7 @@ shim_init(void)
  	set_second_stage (global_image_handle);
  
  	if (secure_mode()) {
@@ -140,7 +152,7 @@ index f8a1e67..3bb2876 100644
  			/*
  			 * If shim includes its own certificates then ensure
  			 * that anything it boots has performed some
-@@ -2706,8 +2726,10 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
+@@ -2706,8 +2738,10 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
  	verification_method = VERIFIED_BY_NOTHING;
  
  	vendor_cert_size = cert_table.vendor_cert_size;
@@ -152,5 +164,5 @@ index f8a1e67..3bb2876 100644
  
  	/*
 -- 
-1.8.3.1
+2.18.0
 
