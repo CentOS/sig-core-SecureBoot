@@ -1,0 +1,28 @@
+From 2931d55f8b547663eee88be432e89d2c18506761 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 28 Mar 2017 13:32:39 -0400
+Subject: [PATCH 09/11] add_to_boot_order(): set the new BootOrder entry at the
+ right place
+
+Coverity noticed that this was setting just anything really.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ linux/libfwup.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/linux/libfwup.c b/linux/libfwup.c
+index 3bf2659..8fb4e2e 100644
+--- a/linux/libfwup.c
++++ b/linux/libfwup.c
+@@ -825,6 +825,7 @@ add_to_boot_order(uint16_t boot_entry)
+ 	}
+ 	memcpy(new_boot_order, boot_order, boot_order_size);
+ 
++	i = boot_order_size / sizeof (uint16_t);
+ 	new_boot_order[i] = boot_entry;
+ 	boot_order_size += sizeof (uint16_t);
+ 
+-- 
+2.12.2
+

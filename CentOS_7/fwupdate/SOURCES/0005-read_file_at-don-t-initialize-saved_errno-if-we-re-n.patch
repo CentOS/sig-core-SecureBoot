@@ -1,0 +1,29 @@
+From fd5458603dbd6309e2cc3eba6a1ed0c9c389836e Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 28 Mar 2017 13:19:10 -0400
+Subject: [PATCH 05/11] read_file_at(): don't initialize saved_errno if we're
+ not using it.
+
+Coverity caught this completelty insignificant bug.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ linux/util.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/linux/util.h b/linux/util.h
+index d8dcf3b..23fd7cd 100644
+--- a/linux/util.h
++++ b/linux/util.h
+@@ -35,7 +35,7 @@ static inline int
+ __attribute__((unused))
+ read_file_at(int dfd, char *name, uint8_t **buf, size_t *bufsize)
+ {
+-	int saved_errno = errno;
++	int saved_errno;
+ 	uint8_t *p;
+ 	size_t size = 4096;
+ 	size_t filesize = 0;
+-- 
+2.12.2
+

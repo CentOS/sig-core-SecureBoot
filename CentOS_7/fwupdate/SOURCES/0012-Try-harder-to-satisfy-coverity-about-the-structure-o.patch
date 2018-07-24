@@ -1,0 +1,88 @@
+From 2ca5e334bbc5309fc6329b1263bd8d3d85712d03 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 9 May 2017 09:43:29 -0400
+Subject: [PATCH 12/13] Try harder to satisfy coverity about the structure of
+ update_info.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ efi/fwupdate.c     | 2 +-
+ efi/mkvar2.c       | 2 +-
+ include/fwup-efi.h | 3 ++-
+ linux/libfwup.c    | 6 +++---
+ 4 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/efi/fwupdate.c b/efi/fwupdate.c
+index 942d347..d009267 100644
+--- a/efi/fwupdate.c
++++ b/efi/fwupdate.c
+@@ -674,7 +674,7 @@ add_capsule(update_table *update, EFI_CAPSULE_HEADER **capsule_out,
+ 	UINTN fsize = 0;
+ 	EFI_CAPSULE_HEADER *capsule;
+ 
+-	rc = open_file((EFI_DEVICE_PATH *)update->info->dp, &fh);
++	rc = open_file((EFI_DEVICE_PATH *)update->info->dp_buf, &fh);
+ 	if (EFI_ERROR(rc))
+ 		return rc;
+ 
+diff --git a/efi/mkvar2.c b/efi/mkvar2.c
+index 0c60a5a..a02a912 100644
+--- a/efi/mkvar2.c
++++ b/efi/mkvar2.c
+@@ -44,7 +44,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
+ 	InitializeLib(image, systab);
+ 
+ 	ZeroMem(&info->time_attempted, sizeof (info->time_attempted));
+-	CopyMem(info->dp, devicepath, sizeof (devicepath)-1);
++	CopyMem(info->dp_buf, devicepath, sizeof (devicepath)-1);
+ 	CopyMem(&info->guid, &guid, sizeof (guid));
+ 
+ 	EFI_STATUS rc = uefi_call_wrapper(RT->SetVariable, 5, L"FwUpdates",
+diff --git a/include/fwup-efi.h b/include/fwup-efi.h
+index fe1ec90..37f3459 100644
+--- a/include/fwup-efi.h
++++ b/include/fwup-efi.h
+@@ -31,7 +31,8 @@ typedef struct update_info_s {
+ 	/* variadic device path */
+ 	union {
+ 		efidp_header *dp_ptr;
+-		uint8_t dp[sizeof(efidp_header)];
++		efidp_header dp;
++		uint8_t dp_buf[0];
+ 	};
+ } __attribute__((__packed__)) update_info;
+ 
+diff --git a/linux/libfwup.c b/linux/libfwup.c
+index b29a0e5..232eb77 100644
+--- a/linux/libfwup.c
++++ b/linux/libfwup.c
+@@ -321,7 +321,7 @@ get_err:
+ 		goto get_err;
+ 	}
+ 
+-	ssize_t sz = efidp_size((efidp)local->dp);
++	ssize_t sz = efidp_size((efidp)local->dp_buf);
+ 	if (sz < 0) {
+ 		efi_error("efidp_size() failed");
+ 		free(data);
+@@ -337,7 +337,7 @@ get_err:
+ 		return -1;
+ 	}
+ 
+-	memcpy(dp, local->dp, (size_t)sz);
++	memcpy(dp, local->dp_buf, (size_t)sz);
+ 	local->dp_ptr = dp;
+ 
+ 	*info = local;
+@@ -394,7 +394,7 @@ err:
+ 		return -1;
+ 
+ 	memcpy(info2, info, sizeof(*info));
+-	memcpy(info2->dp, info->dp_ptr, dps);
++	memcpy(info2->dp_buf, info->dp_ptr, dps);
+ 
+ 	uint32_t attributes = EFI_VARIABLE_NON_VOLATILE
+ 			      | EFI_VARIABLE_BOOTSERVICE_ACCESS
+-- 
+2.12.2
+

@@ -1,0 +1,68 @@
+From f350c8f7f91a17039cabd7b1650609e154a85ccd Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 28 Mar 2017 13:32:17 -0400
+Subject: [PATCH 08/11] fwup_resource_iter_create(): make the error path
+ actually work...
+
+coverity noticed that this was horrible.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ linux/libfwup.c | 23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
+
+diff --git a/linux/libfwup.c b/linux/libfwup.c
+index 28a4417..3bf2659 100644
+--- a/linux/libfwup.c
++++ b/linux/libfwup.c
+@@ -422,7 +422,8 @@ int
+ fwup_resource_iter_create(fwup_resource_iter **iter)
+ {
+ 	int error;
+-	const char *path;
++	char *path;
++
+ 	if (!iter) {
+ 		efi_error("invalid iter");
+ 		errno = EINVAL;
+@@ -438,16 +439,13 @@ fwup_resource_iter_create(fwup_resource_iter **iter)
+ 	path = get_esrt_dir(1);
+ 	if (!path) {
+ 		efi_error("get_esrt_dir(1) failed");
+-		return -1;
++		goto err;
+ 	}
++
+ 	new->dir = opendir(path);
+ 	if (!new->dir) {
+ 		efi_error("opendir(path) failed");
+-err:
+-		error = errno;
+-		free(new);
+-		errno = error;
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	new->dirfd = dirfd(new->dir);
+@@ -458,6 +456,17 @@ err:
+ 
+ 	*iter = new;
+ 	return 0;
++err:
++	error = errno;
++	if (new) {
++		if (new->dir)
++			closedir(new->dir);
++		free(new);
++	}
++	if (path)
++		free(path);
++	errno = error;
++	return -1;
+ }
+ 
+ static void
+-- 
+2.12.2
+

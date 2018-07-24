@@ -1,0 +1,30 @@
+From 544b5623f3eadc16840e3e205ce93528b9a987b2 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 28 Mar 2017 13:33:20 -0400
+Subject: [PATCH 10/11] fwup_set_up_update(): check lseek()'s return value.
+
+Coverity noticed this wasn't getting done.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ linux/libfwup.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/linux/libfwup.c b/linux/libfwup.c
+index 8fb4e2e..c14a996 100644
+--- a/linux/libfwup.c
++++ b/linux/libfwup.c
+@@ -1303,6 +1303,10 @@ fwup_set_up_update(fwup_resource *re,
+ 	}
+ 
+ 	offset = lseek(infd, 0, SEEK_CUR);
++	if (offset < 0) {
++		efi_error("lseek failed");
++		return -1;
++	}
+ 
+ 	/* get device */
+ 	rc = get_info(&re->esre.guid, 0, &info);
+-- 
+2.12.2
+

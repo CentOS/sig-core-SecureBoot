@@ -1,0 +1,36 @@
+From eb99a8ffba4963482b3bda2b37266734a1f6ad78 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 28 Mar 2017 13:17:42 -0400
+Subject: [PATCH 04/11] libfwup: get_info: return whatever a second call to
+ get_info() gave us
+
+When we recurse and try to get a new variable, just exit with the status
+code get_info() gave us on the second pass.
+
+Caught by coverity.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ linux/libfwup.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/linux/libfwup.c b/linux/libfwup.c
+index fe4ece4..bdb8708 100644
+--- a/linux/libfwup.c
++++ b/linux/libfwup.c
+@@ -310,10 +310,9 @@ get_err:
+ 			return -1;
+ 		}
+ 		rc = get_info(guid, hw_inst, info);
+-		if (rc < 0) {
++		if (rc < 0)
+ 			efi_error("get_info() failed");
+-			return rc;
+-		}
++		return rc;
+ 	}
+ 	local = (update_info *)data;
+ 
+-- 
+2.12.2
+

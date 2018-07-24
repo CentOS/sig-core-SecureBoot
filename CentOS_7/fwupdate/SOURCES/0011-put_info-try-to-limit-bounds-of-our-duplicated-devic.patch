@@ -1,0 +1,30 @@
+From 2192afd376759f9b0e3720692046baccabf114e9 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Mon, 8 May 2017 15:55:59 -0400
+Subject: [PATCH 11/11] put_info(): try to limit bounds of our duplicated
+ device path more...
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ linux/libfwup.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/linux/libfwup.c b/linux/libfwup.c
+index c14a996..b29a0e5 100644
+--- a/linux/libfwup.c
++++ b/linux/libfwup.c
+@@ -377,7 +377,10 @@ err:
+ 		return -1;
+ 	}
+ 	/* Make sure sizeof(*info) + dps won't integer overflow */
+-	if ((size_t)dps > SSIZE_MAX - sizeof(*info)) {
++	if (((size_t)dps >= SSIZE_MAX - sizeof(*info)) ||
++	    /* Make sure extra hard by just picking an astonishingly large
++	     * value that's merely very very unlikely... */
++	    ((ssize_t)dps > sysconf(_SC_PAGESIZE) * 100)) {
+ 		efi_error("device path size (%zd) would overflow", dps);
+ 		errno = EOVERFLOW;
+ 		return -1;
+-- 
+2.12.2
+

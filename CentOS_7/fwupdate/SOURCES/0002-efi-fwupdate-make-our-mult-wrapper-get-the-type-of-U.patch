@@ -1,0 +1,27 @@
+From cc98981427a6cc19e6612a22528cf7ff6f3ad0f0 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Mon, 6 Mar 2017 16:52:29 -0500
+Subject: [PATCH 2/3] efi/fwupdate: make our mult wrapper get the type of UINTN
+ right.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ efi/fwupdate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/efi/fwupdate.c b/efi/fwupdate.c
+index b82e24e..942d347 100644
+--- a/efi/fwupdate.c
++++ b/efi/fwupdate.c
+@@ -44,7 +44,7 @@ static int debugging;
+ #endif
+ #ifndef uintn_mult
+ #define uintn_mult(a, b, c) ({					\
+-		const UINTN _limit = ~0ULL;			\
++		const UINTN _limit = ~0UL;			\
+ 		int _ret = 1;					\
+ 		if ((a) != 0 && (b) != 0) {			\
+ 			_ret = _limit / (a) < (b);		\
+-- 
+2.9.3
+

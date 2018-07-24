@@ -1,0 +1,30 @@
+From 0b8ddf8fa6d8e2c86b5f3f1f16d87bcd0a921eae Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 28 Mar 2017 13:21:44 -0400
+Subject: [PATCH 06/11] fwup_set_up_update(): don't lseek() on our error path.
+
+We were doing this as a courtesy to the caller, but all checkers will (I
+guess rightly) complain that we're not handling lseek()'s error case.
+Since there's no obvious way *to* handle the error case, may as well
+not.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ linux/libfwup.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/linux/libfwup.c b/linux/libfwup.c
+index bdb8708..d82700f 100644
+--- a/linux/libfwup.c
++++ b/linux/libfwup.c
+@@ -1373,7 +1373,6 @@ fwup_set_up_update(fwup_resource *re,
+ 		goto out;
+ out:
+ 	error = errno;
+-	lseek(infd, offset, SEEK_SET);
+ 	if (path)
+ 		free(path);
+ 	if (fin)
+-- 
+2.12.2
+

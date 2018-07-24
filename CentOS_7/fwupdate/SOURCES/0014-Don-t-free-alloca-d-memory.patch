@@ -1,0 +1,32 @@
+From b0340e15ffde4c508d753cb610166bd7124ecdb1 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Fri, 19 May 2017 15:35:17 -0400
+Subject: [PATCH] Don't free() alloca()'d memory.
+
+get_esrt_dir() returns a value on the caller's local stack, so don't
+free it on the error path in fwup_resource_iter_create().
+
+This fixes a SIGABRT from free() on the case where the machine doesn't
+have an ESRT.
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ linux/libfwup.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/linux/libfwup.c b/linux/libfwup.c
+index 4c9b7c8..929c106 100644
+--- a/linux/libfwup.c
++++ b/linux/libfwup.c
+@@ -466,8 +466,6 @@ err:
+ 			closedir(new->dir);
+ 		free(new);
+ 	}
+-	if (path)
+-		free(path);
+ 	errno = error;
+ 	return -1;
+ }
+-- 
+2.12.2
+
