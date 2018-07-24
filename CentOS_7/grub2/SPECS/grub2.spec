@@ -2,11 +2,12 @@
 
 %global tarversion 2.02~beta2
 %undefine _missing_build_ids_terminate_build
+%define pesign_name centossecureboot001
 
 Name:           grub2
 Epoch:          1
 Version:        2.02
-Release:        0.65%{?dist}%{?buildid}.2
+Release:        0.65%{?dist}%{?buildid}.3
 Summary:        Bootloader with support for Linux, Multiboot and more
 Group:          System Environment/Base
 License:        GPLv3+
@@ -15,8 +16,8 @@ Source0:        ftp://alpha.gnu.org/gnu/grub/grub-%{tarversion}.tar.xz
 #Source0:	ftp://ftp.gnu.org/gnu/grub/grub-%%{tarversion}.tar.xz
 Source1:	grub.macros
 Source2:	grub.patches
-Source3:	centos.cer
-#(source removed)
+Source3: 	centos-ca-secureboot.der
+Source4: 	centossecureboot001.crt
 Source5:	http://unifoundry.com/unifont-5.1.20080820.pcf.gz
 Source6:	gitignore
 
@@ -159,10 +160,10 @@ rm -f grub-%{tarversion}/util/grub-setpassword.in.orig
 
 %build
 %if 0%{with_efi_arch}
-%do_primary_efi_build %{grubefiarch} %{grubefiname} %{grubeficdname} %{_target_platform} "'%{efi_cflags}'" %{SOURCE3} %{SOURCE3} redhatsecureboot301
+%do_primary_efi_build %{grubefiarch} %{grubefiname} %{grubeficdname} %{_target_platform} "'%{efi_cflags}'" %{SOURCE3} %{SOURCE4} %{pesign_name}
 %endif
 %if 0%{with_alt_efi_arch}
-%do_alt_efi_build %{grubaltefiarch} %{grubaltefiname} %{grubalteficdname} %{_alt_target_platform} "'%{alt_efi_cflags}'" %{SOURCE3} %{SOURCE3} redhatsecureboot301
+%do_alt_efi_build %{grubaltefiarch} %{grubaltefiname} %{grubalteficdname} %{_alt_target_platform} "'%{alt_efi_cflags}'" %{SOURCE3} %{SOURCE4} %{pesign_name}
 %endif
 %if 0%{with_legacy_arch}
 %do_legacy_build %{grublegacyarch}
@@ -453,6 +454,10 @@ fi
 %endif
 
 %changelog
+* Tue Jul 24 2018 Fabian Arrotin <arrfab@centos.org - 2.02-0.65.el7.centos.3
+- Rolling in new CentOS Secureboot key
+- Added pesign_name macro for the cert name to use
+
 * Thu Oct 19 2017 CentOS Sources <bugs@centos.org> - 2.02-0.65.el7.centos.2
 - Roll in CentOS Secureboot keys
 - Move the edidir to be CentOS, so people can co-install fedora, rhel and centos
