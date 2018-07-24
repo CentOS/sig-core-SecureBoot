@@ -1,0 +1,156 @@
+From 66e2879890d052ee04fd0c9c35598ed6af9cc803 Mon Sep 17 00:00:00 2001
+From: Patrick Uiterwijk <patrick@puiterwijk.org>
+Date: Sat, 21 Jul 2018 03:27:26 +0200
+Subject: [PATCH] Add vendor_esl
+
+Signed-off-by: Patrick Uiterwijk <patrick@puiterwijk.org>
+---
+ Makefile |  3 +++
+ cert.S   | 30 ++++++++++++++++++++++++++++++
+ shim.c   | 24 +++++++++++++++++++++++-
+ 3 files changed, 56 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 6ece282..78688e0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -82,6 +82,9 @@ endif
+ ifneq ($(origin VENDOR_CERT_FILE), undefined)
+ 	CFLAGS += -DVENDOR_CERT_FILE=\"$(VENDOR_CERT_FILE)\"
+ endif
++ifneq ($(origin VENDOR_ESL_FILE), undefined)
++	CFLAGS += -DVENDOR_ESL_FILE=\"$(VENDOR_ESL_FILE)\"
++endif
+ ifneq ($(origin VENDOR_DBX_FILE), undefined)
+ 	CFLAGS += -DVENDOR_DBX_FILE=\"$(VENDOR_DBX_FILE)\"
+ endif
+diff --git a/cert.S b/cert.S
+index cfc4525..7ad782a 100644
+--- a/cert.S
++++ b/cert.S
+@@ -8,12 +8,18 @@ cert_table:
+ #else
+ 	.long	0
+ #endif
++#if defined(VENDOR_ESL_FILE)
++	.long	vendor_esl_priv_end - vendor_esl_priv
++#else
++	.long	0
++#endif
+ #if defined(VENDOR_DBX_FILE)
+ 	.long	vendor_dbx_priv_end - vendor_dbx_priv
+ #else
+ 	.long	0
+ #endif
+ 	.long	vendor_cert_priv - cert_table
++	.long	vendor_esl_priv - cert_table
+ 	.long	vendor_dbx_priv - cert_table
+ #if defined(VENDOR_CERT_FILE)
+ 	.data
+@@ -39,6 +45,30 @@ vendor_cert_priv:
+ 	.section .vendor_cert, "a", %progbits
+ vendor_cert_priv_end:
+ #endif
++#if defined(VENDOR_ESL_FILE)
++	.data
++	.align	1
++	.type	vendor_esl_priv, %object
++	.size	vendor_esl_priv, vendor_esl_priv_end-vendor_esl_priv
++	.section .vendor_cert, "a", %progbits
++vendor_esl_priv:
++.incbin VENDOR_ESL_FILE
++vendor_esl_priv_end:
++#else
++	.bss
++	.type	vendor_esl_priv, %object
++	.size	vendor_esl_priv, 1
++	.section .vendor_cert, "a", %progbits
++vendor_esl_priv:
++	.zero	1
++
++	.data
++	.align 4
++	.type	vendor_esl_size_priv, %object
++	.size	vendor_esl_size_priv, 4
++	.section .vendor_cert, "a", %progbits
++vendor_esl_priv_end:
++#endif
+ #if defined(VENDOR_DBX_FILE)
+ 	.data
+ 	.align	1
+diff --git a/shim.c b/shim.c
+index f8a1e67..3bb2876 100644
+--- a/shim.c
++++ b/shim.c
+@@ -84,14 +84,18 @@ EFI_GUID SHIM_LOCK_GUID = { 0x605dab50, 0xe046, 0x4300, {0xab, 0xb6, 0x3d, 0xd8,
+  */
+ extern struct {
+ 	UINT32 vendor_cert_size;
++	UINT32 vendor_esl_size;
+ 	UINT32 vendor_dbx_size;
+ 	UINT32 vendor_cert_offset;
++	UINT32 vendor_esl_offset;
+ 	UINT32 vendor_dbx_offset;
+ } cert_table;
+ 
+ UINT32 vendor_cert_size;
++UINT32 vendor_esl_size;
+ UINT32 vendor_dbx_size;
+ UINT8 *vendor_cert;
++UINT8 *vendor_esl;
+ UINT8 *vendor_dbx;
+ 
+ /*
+@@ -1030,6 +1034,18 @@ static EFI_STATUS verify_buffer (char *data, int datasize,
+ 		}
+ 
+ 		/*
++		 * Check if there's a vendor ESL built-in
++		 */
++		if (vendor_esl_size &&
++			check_db_cert_in_ram((EFI_SIGNATURE_LIST*)vendor_esl,
++					     vendor_esl_size,
++					     cert,
++					     sha256hash) == DATA_FOUND) {
++			status = EFI_SUCCESS;
++			return status;
++		}
++
++		/*
+ 		 * And finally, check against shim's built-in key
+ 		 */
+ 		if (vendor_cert_size &&
+@@ -1973,6 +1989,10 @@ EFI_STATUS mirror_mok_list()
+ 
+ 		CertData->SignatureOwner = SHIM_LOCK_GUID;
+ 		CopyMem(p, vendor_cert, vendor_cert_size);
++	} else if (vendor_esl_size) {
++		// TODO: Implement adding to MOK
++		FullDataSize = DataSize;
++		FullData = Data;
+ 	} else {
+ 		FullDataSize = DataSize;
+ 		FullData = Data;
+@@ -2606,7 +2626,7 @@ shim_init(void)
+ 	set_second_stage (global_image_handle);
+ 
+ 	if (secure_mode()) {
+-		if (vendor_cert_size || vendor_dbx_size) {
++		if (vendor_cert_size || vendor_esl_size || vendor_dbx_size) {
+ 			/*
+ 			 * If shim includes its own certificates then ensure
+ 			 * that anything it boots has performed some
+@@ -2706,8 +2726,10 @@ efi_main (EFI_HANDLE passed_image_handle, EFI_SYSTEM_TABLE *passed_systab)
+ 	verification_method = VERIFIED_BY_NOTHING;
+ 
+ 	vendor_cert_size = cert_table.vendor_cert_size;
++	vendor_esl_size = cert_table.vendor_esl_size;
+ 	vendor_dbx_size = cert_table.vendor_dbx_size;
+ 	vendor_cert = (UINT8 *)&cert_table + cert_table.vendor_cert_offset;
++	vendor_esl = (UINT8 *)&cert_table + cert_table.vendor_esl_offset;
+ 	vendor_dbx = (UINT8 *)&cert_table + cert_table.vendor_dbx_offset;
+ 
+ 	/*
+-- 
+1.8.3.1
+

@@ -1,16 +1,19 @@
 Name:           shim
 Version:        12
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        First-stage UEFI bootloader
 
 License:        BSD
 URL:            http://www.codon.org.uk/~mjg59/shim/
 Source0:	https://github.com/mjg59/shim/releases/download/%{version}/shim-%{version}.tar.bz2
-Source1:	centos.crt
+#Source1:	centos.crt
 # currently here's what's in our dbx: # nothing.
 #Source2:	dbx-x64.esl
 #Source3:	dbx-aa64.esl
 Source4:	shim-find-debuginfo.sh
+Source5:	centos.esl
+
+Patch0:		0001-Add-vendor-esl.patch
 
 BuildRequires: git openssl-devel openssl
 BuildRequires: pesign >= 0.106-1
@@ -127,12 +130,18 @@ fi
 if [ -f "%{SOURCE3}" ]; then
 	MAKEFLAGS="$MAKEFLAGS VENDOR_DBX_FILE=%{SOURCE3}"
 fi
+if [ -f "%{SOURCE5}" ]; then
+	MAKEFLAGS="$MAKEFLAGS VENDOR_ESL_FILE=%{SOURCE5}"
+fi
 %else
 if [ -f "%{SOURCE1}" ]; then
 	MAKEFLAGS="$MAKEFLAGS VENDOR_CERT_FILE=%{SOURCE1}"
 fi
 if [ -f "%{SOURCE2}" ]; then
 	MAKEFLAGS="$MAKEFLAGS VENDOR_DBX_FILE=%{SOURCE2}"
+fi
+if [ -f "%{SOURCE5}" ]; then
+	MAKEFLAGS="$MAKEFLAGS VENDOR_ESL_FILE=%{SOURCE5}"
 fi
 %endif
 cd %{name}-%{version}-%{efiarch}
@@ -217,6 +226,10 @@ cd ../%{name}-%{version}-%{efiarch}
 %endif
 
 %changelog
+* Mon Jul 23 2018 Fabian Arrotin <arrfab@centos.org> - 12-2.el7.centos
+- Added 0001-Add-vendor-esl.patch (Patrick Uiterwijk)
+- Rebuilt with combined centos.esl (so new and previous crt) 
+
 * Tue Aug 08 2017 Karanbir Singh <kbsingh@centos.org> - 12.1.el7.centos
 - Rebuild with CentOS cert
 
