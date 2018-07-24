@@ -1,0 +1,730 @@
+From 36d301077a6ea9794d9017602f87c5da2d3139f7 Mon Sep 17 00:00:00 2001
+From: Andrey Borzenkov <arvidjaar@gmail.com>
+Date: Mon, 22 Sep 2014 20:47:10 +0400
+Subject: [PATCH 242/260] cleanup: grub_cpu_to_XXX_compile_time for constants
+
+This tries to catch all cases where grub_cpu_to_XXX was used for constant
+expressions (including sizeof).
+---
+ grub-core/bus/usb/ehci.c         | 44 ++++++++++++++++++++--------------------
+ grub-core/bus/usb/ohci.c         |  8 ++++----
+ grub-core/commands/gptsync.c     |  6 +++---
+ grub-core/disk/mdraid_linux.c    | 12 +++++------
+ grub-core/disk/scsi.c            |  2 +-
+ grub-core/disk/usbms.c           |  4 ++--
+ grub-core/fs/hfs.c               |  2 +-
+ grub-core/fs/reiserfs.c          | 12 +++++------
+ grub-core/lib/fdt.c              | 12 +++++------
+ grub-core/loader/i386/linux.c    |  2 +-
+ grub-core/loader/i386/pc/linux.c | 12 +++++------
+ grub-core/loader/i386/xen_file.c |  4 ++--
+ grub-core/net/arp.c              |  4 ++--
+ grub-core/net/bootp.c            |  4 ++--
+ grub-core/net/ip.c               |  2 +-
+ grub-core/net/net.c              |  2 +-
+ grub-core/net/tftp.c             |  8 ++++----
+ grub-core/partmap/acorn.c        |  4 ++--
+ grub-core/partmap/bsdlabel.c     |  2 +-
+ grub-core/partmap/gpt.c          |  2 +-
+ grub-core/partmap/msdos.c        |  4 ++--
+ grub-core/tests/video_checksum.c |  6 +++---
+ util/grub-mkfont.c               |  4 ++--
+ util/grub-mklayout.c             |  2 +-
+ util/mkimage.c                   | 15 +++++++-------
+ 25 files changed, 90 insertions(+), 89 deletions(-)
+
+diff --git a/grub-core/bus/usb/ehci.c b/grub-core/bus/usb/ehci.c
+index c0feefafe..8ece40086 100644
+--- a/grub-core/bus/usb/ehci.c
++++ b/grub-core/bus/usb/ehci.c
+@@ -670,23 +670,23 @@ grub_ehci_pci_iter (grub_pci_device_t dev, grub_pci_id_t pciid,
+   for (i = 0; i < (GRUB_EHCI_N_TD - 1); i++)
+     {
+       e->td_virt[i].link_td = e->td_phys + (i + 1) * sizeof (struct grub_ehci_td);
+-      e->td_virt[i].next_td = grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
+-      e->td_virt[i].alt_next_td = grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++      e->td_virt[i].next_td = grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
++      e->td_virt[i].alt_next_td = grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+     }
+   e->td_virt[GRUB_EHCI_N_TD - 1].next_td =
+-    grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++    grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+   e->td_virt[GRUB_EHCI_N_TD - 1].alt_next_td =
+-    grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++    grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+   e->tdfree_virt = e->td_virt;
+   /* Set Terminate in first QH, which is used in framelist */
+-  e->qh_virt[0].qh_hptr = grub_cpu_to_le32 (GRUB_EHCI_TERMINATE | GRUB_EHCI_HPTR_TYPE_QH);
+-  e->qh_virt[0].td_overlay.next_td = grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++  e->qh_virt[0].qh_hptr = grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE | GRUB_EHCI_HPTR_TYPE_QH);
++  e->qh_virt[0].td_overlay.next_td = grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+   e->qh_virt[0].td_overlay.alt_next_td =
+-    grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++    grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+   /* Also set Halted bit in token */
+-  e->qh_virt[0].td_overlay.token = grub_cpu_to_le32 (GRUB_EHCI_STATUS_HALTED);
++  e->qh_virt[0].td_overlay.token = grub_cpu_to_le32_compile_time (GRUB_EHCI_STATUS_HALTED);
+   /* Set the H bit in first QH used for AL */
+-  e->qh_virt[1].ep_char = grub_cpu_to_le32 (GRUB_EHCI_H);
++  e->qh_virt[1].ep_char = grub_cpu_to_le32_compile_time (GRUB_EHCI_H);
+   /* Set Terminate into TD in rest of QHs and set horizontal link
+    * pointer to itself - these QHs will be used for asynchronous
+    * schedule and they should have valid value in horiz. link */
+@@ -697,12 +697,12 @@ grub_ehci_pci_iter (grub_pci_device_t dev, grub_pci_id_t pciid,
+ 						e->qh_chunk) &
+ 			   GRUB_EHCI_POINTER_MASK) | GRUB_EHCI_HPTR_TYPE_QH);
+       e->qh_virt[i].td_overlay.next_td =
+-	grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++	grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+       e->qh_virt[i].td_overlay.alt_next_td =
+-	grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++	grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+       /* Also set Halted bit in token */
+       e->qh_virt[i].td_overlay.token =
+-	grub_cpu_to_le32 (GRUB_EHCI_STATUS_HALTED);
++	grub_cpu_to_le32_compile_time (GRUB_EHCI_STATUS_HALTED);
+     }
+ 
+   /* Note: QH 0 and QH 1 are reserved and must not be used anywhere.
+@@ -991,7 +991,7 @@ grub_ehci_find_qh (struct grub_ehci *e, grub_usb_transfer_t transfer)
+   target = ((transfer->endpoint << GRUB_EHCI_EP_NUM_OFF) |
+ 	    transfer->devaddr) & GRUB_EHCI_TARGET_MASK;
+   target = grub_cpu_to_le32 (target);
+-  mask = grub_cpu_to_le32 (GRUB_EHCI_TARGET_MASK);
++  mask = grub_cpu_to_le32_compile_time (GRUB_EHCI_TARGET_MASK);
+ 
+   /* low speed interrupt transfers are linked to the periodic */
+   /* schedule, everything else to the asynchronous schedule */
+@@ -1200,7 +1200,7 @@ grub_ehci_transaction (struct grub_ehci *e,
+   grub_memset ((void *) td, 0, sizeof (struct grub_ehci_td));
+ 
+   /* Don't point to any TD yet, just terminate.  */
+-  td->next_td = grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++  td->next_td = grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+   /* Set alternate pointer. When short packet occurs, alternate TD
+    * will not be really fetched because it is not active. But don't
+    * forget, EHCI will try to fetch alternate TD every scan of AL
+@@ -1325,9 +1325,9 @@ grub_ehci_setup_transfer (grub_usb_controller_t dev,
+   /* Fill whole alternate TD by zeros (= inactive) and set
+    * Terminate bits and Halt bit */
+   grub_memset ((void *) cdata->td_alt_virt, 0, sizeof (struct grub_ehci_td));
+-  cdata->td_alt_virt->next_td = grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
+-  cdata->td_alt_virt->alt_next_td = grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
+-  cdata->td_alt_virt->token = grub_cpu_to_le32 (GRUB_EHCI_STATUS_HALTED);
++  cdata->td_alt_virt->next_td = grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
++  cdata->td_alt_virt->alt_next_td = grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
++  cdata->td_alt_virt->token = grub_cpu_to_le32_compile_time (GRUB_EHCI_STATUS_HALTED);
+ 
+   /* Allocate appropriate number of TDs and set */
+   for (i = 0; i < transfer->transcnt; i++)
+@@ -1364,7 +1364,7 @@ grub_ehci_setup_transfer (grub_usb_controller_t dev,
+   cdata->td_last_virt = td;
+   cdata->td_last_phys = grub_dma_virt2phys (td, e->td_chunk);
+   /* Last TD should not have set alternate TD */
+-  cdata->td_last_virt->alt_next_td = grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++  cdata->td_last_virt->alt_next_td = grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+ 
+   grub_dprintf ("ehci", "setup_transfer: cdata=%p, qh=%p\n",
+ 		cdata,cdata->qh_virt);
+@@ -1377,14 +1377,14 @@ grub_ehci_setup_transfer (grub_usb_controller_t dev,
+   /* Start transfer: */
+   /* Unlink possible alternate pointer in QH */
+   cdata->qh_virt->td_overlay.alt_next_td =
+-    grub_cpu_to_le32 (GRUB_EHCI_TERMINATE);
++    grub_cpu_to_le32_compile_time (GRUB_EHCI_TERMINATE);
+   /* Link new TDs with QH via next_td */
+   cdata->qh_virt->td_overlay.next_td =
+     grub_cpu_to_le32 (grub_dma_virt2phys
+ 		      (cdata->td_first_virt, e->td_chunk));
+   /* Reset Active and Halted bits in QH to activate Advance Queue,
+    * i.e. reset token */
+-  cdata->qh_virt->td_overlay.token = grub_cpu_to_le32 (0);
++  cdata->qh_virt->td_overlay.token = grub_cpu_to_le32_compile_time (0);
+ 
+   /* Finito */
+   transfer->controller_data = cdata;
+@@ -1408,9 +1408,9 @@ grub_ehci_pre_finish_transfer (grub_usb_transfer_t transfer)
+    * safely manipulate with QH TD part. */
+   cdata->qh_virt->td_overlay.token = (cdata->qh_virt->td_overlay.token
+ 				      |
+-				      grub_cpu_to_le32
++				      grub_cpu_to_le32_compile_time
+ 				      (GRUB_EHCI_STATUS_HALTED)) &
+-    grub_cpu_to_le32 (~GRUB_EHCI_STATUS_ACTIVE);
++    grub_cpu_to_le32_compile_time (~GRUB_EHCI_STATUS_ACTIVE);
+ 
+   /* Print debug data here if necessary */
+ 
+diff --git a/grub-core/bus/usb/ohci.c b/grub-core/bus/usb/ohci.c
+index 946a4ed7d..d27bfe7fb 100644
+--- a/grub-core/bus/usb/ohci.c
++++ b/grub-core/bus/usb/ohci.c
+@@ -314,7 +314,7 @@ grub_ohci_pci_iter (grub_pci_device_t dev, grub_pci_id_t pciid,
+   grub_memset ((void *) o->ed_ctrl, 0, sizeof (struct grub_ohci_ed)
+ 	       * GRUB_OHCI_CTRL_EDS);
+   for (j=0; j < GRUB_OHCI_CTRL_EDS; j++)
+-    o->ed_ctrl[j].target = grub_cpu_to_le32 (1 << 14); /* skip */
++    o->ed_ctrl[j].target = grub_cpu_to_le32_compile_time (1 << 14); /* skip */
+     
+   grub_dprintf ("ohci", "EDs-C: chunk=%p, virt=%p, phys=0x%02x\n",
+                 o->ed_ctrl_chunk, o->ed_ctrl, o->ed_ctrl_addr);
+@@ -329,7 +329,7 @@ grub_ohci_pci_iter (grub_pci_device_t dev, grub_pci_id_t pciid,
+   /* Preset EDs */
+   grub_memset ((void*)o->ed_bulk, 0, sizeof(struct grub_ohci_ed) * GRUB_OHCI_BULK_EDS);
+   for (j=0; j < GRUB_OHCI_BULK_EDS; j++)
+-    o->ed_bulk[j].target = grub_cpu_to_le32 (1 << 14); /* skip */
++    o->ed_bulk[j].target = grub_cpu_to_le32_compile_time (1 << 14); /* skip */
+ 
+   grub_dprintf ("ohci", "EDs-B: chunk=%p, virt=%p, phys=0x%02x\n",
+                 o->ed_bulk_chunk, o->ed_bulk, o->ed_bulk_addr);
+@@ -1349,10 +1349,10 @@ grub_ohci_fini_hw (int noreturn __attribute__ ((unused)))
+       /* Set skip in all EDs */
+       if (o->ed_bulk)
+         for (i=0; i < GRUB_OHCI_BULK_EDS; i++)
+-          o->ed_bulk[i].target |= grub_cpu_to_le32 (1 << 14); /* skip */
++          o->ed_bulk[i].target |= grub_cpu_to_le32_compile_time (1 << 14); /* skip */
+       if (o->ed_ctrl)
+         for (i=0; i < GRUB_OHCI_CTRL_EDS; i++)
+-          o->ed_ctrl[i].target |= grub_cpu_to_le32 (1 << 14); /* skip */
++          o->ed_ctrl[i].target |= grub_cpu_to_le32_compile_time (1 << 14); /* skip */
+ 
+       /* We should wait for next SOF to be sure that all EDs are
+        * unaccessed by OHCI. But OHCI can be non-functional, so
+diff --git a/grub-core/commands/gptsync.c b/grub-core/commands/gptsync.c
+index 3db62887b..16592e9bb 100644
+--- a/grub-core/commands/gptsync.c
++++ b/grub-core/commands/gptsync.c
+@@ -101,7 +101,7 @@ grub_cmd_gptsync (grub_command_t cmd __attribute__ ((unused)),
+     }
+ 
+   /* Check if it is valid.  */
+-  if (mbr.signature != grub_cpu_to_le16 (GRUB_PC_PARTITION_SIGNATURE))
++  if (mbr.signature != grub_cpu_to_le16_compile_time (GRUB_PC_PARTITION_SIGNATURE))
+     {
+       grub_device_close (dev);
+       return grub_error (GRUB_ERR_BAD_PART_TABLE, "no signature");
+@@ -216,7 +216,7 @@ grub_cmd_gptsync (grub_command_t cmd __attribute__ ((unused)),
+     first_sector--;
+   mbr.entries[0].flag = 0;
+   mbr.entries[0].type = GRUB_PC_PARTITION_TYPE_GPT_DISK;
+-  mbr.entries[0].start = grub_cpu_to_le32 (1);
++  mbr.entries[0].start = grub_cpu_to_le32_compile_time (1);
+   lba_to_chs (1,
+ 	      &(mbr.entries[0].start_sector),
+ 	      &(mbr.entries[0].start_cylinder),
+@@ -227,7 +227,7 @@ grub_cmd_gptsync (grub_command_t cmd __attribute__ ((unused)),
+ 	      &(mbr.entries[0].end_head));
+   mbr.entries[0].length = grub_cpu_to_le32 (first_sector);
+ 
+-  mbr.signature = grub_cpu_to_le16 (GRUB_PC_PARTITION_SIGNATURE);
++  mbr.signature = grub_cpu_to_le16_compile_time (GRUB_PC_PARTITION_SIGNATURE);
+ 
+   if (grub_disk_write (dev->disk, 0, 0, sizeof (mbr), &mbr))
+     {
+diff --git a/grub-core/disk/mdraid_linux.c b/grub-core/disk/mdraid_linux.c
+index 4aa588235..11024ae31 100644
+--- a/grub-core/disk/mdraid_linux.c
++++ b/grub-core/disk/mdraid_linux.c
+@@ -33,16 +33,16 @@ GRUB_MOD_LICENSE ("GPLv3+");
+ #define grub_md_to_cpu64 grub_be_to_cpu64
+ #define grub_md_to_cpu32 grub_be_to_cpu32
+ #define grub_md_to_cpu16 grub_be_to_cpu16
+-#define grub_cpu_to_md64_compile_time grub_cpu_to_be64
+-#define grub_cpu_to_md32_compile_time grub_cpu_to_be32
+-#define grub_cpu_to_md16_compile_time grub_cpu_to_be16
++#define grub_cpu_to_md64_compile_time grub_cpu_to_be64_compile_time
++#define grub_cpu_to_md32_compile_time grub_cpu_to_be32_compile_time
++#define grub_cpu_to_md16_compile_time grub_cpu_to_be16_compile_time
+ #else
+ #define grub_md_to_cpu64 grub_le_to_cpu64
+ #define grub_md_to_cpu32 grub_le_to_cpu32
+ #define grub_md_to_cpu16 grub_le_to_cpu16
+-#define grub_cpu_to_md64_compile_time grub_cpu_to_le64
+-#define grub_cpu_to_md32_compile_time grub_cpu_to_le32
+-#define grub_cpu_to_md16_compile_time grub_cpu_to_le16
++#define grub_cpu_to_md64_compile_time grub_cpu_to_le64_compile_time
++#define grub_cpu_to_md32_compile_time grub_cpu_to_le32_compile_time
++#define grub_cpu_to_md16_compile_time grub_cpu_to_le16_compile_time
+ #endif
+ 
+ #define RESERVED_BYTES			(64 * 1024)
+diff --git a/grub-core/disk/scsi.c b/grub-core/disk/scsi.c
+index b6cb2f421..92084d0f8 100644
+--- a/grub-core/disk/scsi.c
++++ b/grub-core/disk/scsi.c
+@@ -201,7 +201,7 @@ grub_scsi_read_capacity16 (grub_scsi_t scsi)
+   rc.opcode = grub_scsi_cmd_read_capacity16;
+   rc.lun = (scsi->lun << GRUB_SCSI_LUN_SHIFT) | 0x10;
+   rc.logical_block_addr = 0;
+-  rc.alloc_len = grub_cpu_to_be32 (sizeof (rcd));
++  rc.alloc_len = grub_cpu_to_be32_compile_time (sizeof (rcd));
+   rc.PMI = 0;
+   rc.control = 0;
+ 	
+diff --git a/grub-core/disk/usbms.c b/grub-core/disk/usbms.c
+index 2b769bdd8..380ca4c4c 100644
+--- a/grub-core/disk/usbms.c
++++ b/grub-core/disk/usbms.c
+@@ -307,7 +307,7 @@ grub_usbms_transfer_bo (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
+ 
+   /* Setup the request.  */
+   grub_memset (&cbw, 0, sizeof (cbw));
+-  cbw.signature = grub_cpu_to_le32 (0x43425355);
++  cbw.signature = grub_cpu_to_le32_compile_time (0x43425355);
+   cbw.tag = tag;
+   cbw.transfer_length = grub_cpu_to_le32 (size);
+   cbw.flags = (!read_write) << GRUB_USBMS_DIRECTION_BIT;
+@@ -414,7 +414,7 @@ CheckCSW:
+   
+   /* If phase error or not valid signature, do bulk-only reset device. */
+   if ((status.status == 2) ||
+-      (status.signature != grub_cpu_to_le32(0x53425355)))
++      (status.signature != grub_cpu_to_le32_compile_time(0x53425355)))
+     { /* Bulk-only reset device. */
+       grub_dprintf ("usb", "Bulk-only reset device - bad status\n");
+       grub_usbms_reset (dev);
+diff --git a/grub-core/fs/hfs.c b/grub-core/fs/hfs.c
+index 1e593059a..d1dc01545 100644
+--- a/grub-core/fs/hfs.c
++++ b/grub-core/fs/hfs.c
+@@ -369,7 +369,7 @@ grub_hfs_mount (grub_disk_t disk)
+ 
+   /* Lookup the root directory node in the catalog tree using the
+      volume name.  */
+-  key.parent_dir = grub_cpu_to_be32 (1);
++  key.parent_dir = grub_cpu_to_be32_compile_time (1);
+   key.strlen = data->sblock.volname[0];
+   grub_strcpy ((char *) key.str, (char *) (data->sblock.volname + 1));
+ 
+diff --git a/grub-core/fs/reiserfs.c b/grub-core/fs/reiserfs.c
+index ac65054d3..de3d4fa3c 100644
+--- a/grub-core/fs/reiserfs.c
++++ b/grub-core/fs/reiserfs.c
+@@ -365,7 +365,7 @@ grub_reiserfs_set_key_offset (struct grub_reiserfs_key *key,
+     key->u.v1.offset = grub_cpu_to_le32 (value);
+   else
+     key->u.v2.offset_type \
+-      = ((key->u.v2.offset_type & grub_cpu_to_le64 (15ULL << 60))
++      = ((key->u.v2.offset_type & grub_cpu_to_le64_compile_time (15ULL << 60))
+          | grub_cpu_to_le64 (value & (~0ULL >> 4)));
+ }
+ 
+@@ -412,7 +412,7 @@ grub_reiserfs_set_key_type (struct grub_reiserfs_key *key,
+     key->u.v1.type = grub_cpu_to_le32 (type);
+   else
+     key->u.v2.offset_type
+-      = ((key->u.v2.offset_type & grub_cpu_to_le64 (~0ULL >> 4))
++      = ((key->u.v2.offset_type & grub_cpu_to_le64_compile_time (~0ULL >> 4))
+          | grub_cpu_to_le64 ((grub_uint64_t) type << 60));
+ 
+   assert (grub_reiserfs_get_key_type (key) == grub_type);
+@@ -997,8 +997,8 @@ grub_reiserfs_open (struct grub_file *file, const char *name)
+   data = grub_reiserfs_mount (file->device->disk);
+   if (! data)
+     goto fail;
+-  key.directory_id = grub_cpu_to_le32 (1);
+-  key.object_id = grub_cpu_to_le32 (2);
++  key.directory_id = grub_cpu_to_le32_compile_time (1);
++  key.object_id = grub_cpu_to_le32_compile_time (2);
+   key.u.v2.offset_type = 0;
+   grub_reiserfs_set_key_type (&key, GRUB_REISERFS_DIRECTORY, 2);
+   grub_reiserfs_set_key_offset (&key, 1);
+@@ -1289,8 +1289,8 @@ grub_reiserfs_dir (grub_device_t device, const char *path,
+   data = grub_reiserfs_mount (device->disk);
+   if (! data)
+     goto fail;
+-  root_key.directory_id = grub_cpu_to_le32 (1);
+-  root_key.object_id = grub_cpu_to_le32 (2);
++  root_key.directory_id = grub_cpu_to_le32_compile_time (1);
++  root_key.object_id = grub_cpu_to_le32_compile_time (2);
+   root_key.u.v2.offset_type = 0;
+   grub_reiserfs_set_key_type (&root_key, GRUB_REISERFS_DIRECTORY, 2);
+   grub_reiserfs_set_key_offset (&root_key, 1);
+diff --git a/grub-core/lib/fdt.c b/grub-core/lib/fdt.c
+index 907a7bff6..7e76dc06b 100644
+--- a/grub-core/lib/fdt.c
++++ b/grub-core/lib/fdt.c
+@@ -164,10 +164,10 @@ static int add_subnode (void *fdt, int parentoffset, const char *name)
+ insert:
+   grub_memmove (token + entry_size / sizeof(*token), token,
+                 (grub_addr_t) end - (grub_addr_t) token);
+-  *token = grub_cpu_to_be32(FDT_BEGIN_NODE);
++  *token = grub_cpu_to_be32_compile_time(FDT_BEGIN_NODE);
+   token[entry_size / sizeof(*token) - 2] = 0;	/* padding bytes */
+   grub_strcpy((char *) (token + 1), name);
+-  token[entry_size / sizeof(*token) - 1] = grub_cpu_to_be32(FDT_END_NODE);
++  token[entry_size / sizeof(*token) - 1] = grub_cpu_to_be32_compile_time(FDT_END_NODE);
+   grub_fdt_set_size_dt_struct (fdt, struct_size + entry_size);
+   return ((grub_addr_t) token - (grub_addr_t) fdt
+           - grub_fdt_get_off_dt_struct(fdt));
+@@ -377,7 +377,7 @@ int grub_fdt_set_prop (void *fdt, unsigned int nodeoffset, const char *name,
+ 
+       prop_name_present = 1;
+ 	  for (i = 0; i < prop_len / sizeof(grub_uint32_t); i++)
+-        *(prop + 3 + i) = grub_cpu_to_be32 (FDT_NOP);
++        *(prop + 3 + i) = grub_cpu_to_be32_compile_time (FDT_NOP);
+       if (len > ALIGN_UP(prop_len, sizeof(grub_uint32_t)))
+         {
+           /* Length of new property value is greater than the space allocated
+@@ -385,7 +385,7 @@ int grub_fdt_set_prop (void *fdt, unsigned int nodeoffset, const char *name,
+              nameoff field of the current entry and replace the current entry
+              with NOP tokens. */
+           nameoff = grub_be_to_cpu32 (*(prop + 2));
+-    	  *prop = *(prop + 1) = *(prop + 2) = grub_cpu_to_be32 (FDT_NOP);
++          *prop = *(prop + 1) = *(prop + 2) = grub_cpu_to_be32_compile_time (FDT_NOP);
+           prop = NULL;
+         }
+     }
+@@ -419,7 +419,7 @@ int grub_fdt_set_prop (void *fdt, unsigned int nodeoffset, const char *name,
+                   struct_end(fdt) - (grub_addr_t) prop);
+     grub_fdt_set_size_dt_struct (fdt, grub_fdt_get_size_dt_struct (fdt)
+                                  + prop_entry_size(len));
+-    *prop = grub_cpu_to_be32 (FDT_PROP);
++    *prop = grub_cpu_to_be32_compile_time (FDT_PROP);
+     *(prop + 2) = grub_cpu_to_be32 (nameoff);
+   }
+   *(prop + 1) = grub_cpu_to_be32 (len);
+@@ -447,7 +447,7 @@ grub_fdt_create_empty_tree (void *fdt, unsigned int size)
+   et->empty_node.node_end = grub_cpu_to_be32_compile_time (FDT_END_NODE);
+   et->empty_node.node_start = grub_cpu_to_be32_compile_time (FDT_BEGIN_NODE);
+   ((struct grub_fdt_empty_tree *) fdt)->header.off_mem_rsvmap =
+-    grub_cpu_to_be32 (ALIGN_UP (sizeof (grub_fdt_header_t), 8));
++    grub_cpu_to_be32_compile_time (ALIGN_UP (sizeof (grub_fdt_header_t), 8));
+ 
+   grub_fdt_set_off_dt_strings (fdt, sizeof (*et));
+   grub_fdt_set_off_dt_struct (fdt,
+diff --git a/grub-core/loader/i386/linux.c b/grub-core/loader/i386/linux.c
+index 764cde203..e3906eb65 100644
+--- a/grub-core/loader/i386/linux.c
++++ b/grub-core/loader/i386/linux.c
+@@ -734,7 +734,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+ 
+   /* FIXME: 2.03 is not always good enough (Linux 2.4 can be 2.03 and
+      still not support 32-bit boot.  */
+-  if (lh.header != grub_cpu_to_le32 (GRUB_LINUX_MAGIC_SIGNATURE)
++  if (lh.header != grub_cpu_to_le32_compile_time (GRUB_LINUX_MAGIC_SIGNATURE)
+       || grub_le_to_cpu16 (lh.version) < 0x0203)
+     {
+       grub_error (GRUB_ERR_BAD_OS, "version too old for 32-bit boot"
+diff --git a/grub-core/loader/i386/pc/linux.c b/grub-core/loader/i386/pc/linux.c
+index 60bb31fbf..c2e5fa9ab 100644
+--- a/grub-core/loader/i386/pc/linux.c
++++ b/grub-core/loader/i386/pc/linux.c
+@@ -201,7 +201,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+ 
+       if (grub_le_to_cpu16 (lh.version) >= 0x0201)
+ 	{
+-	  lh.heap_end_ptr = grub_cpu_to_le32_compile_time (GRUB_LINUX_HEAP_END_OFFSET);
++	  lh.heap_end_ptr = grub_cpu_to_le16_compile_time (GRUB_LINUX_HEAP_END_OFFSET);
+ 	  lh.loadflags |= GRUB_LINUX_FLAG_CAN_USE_HEAP;
+ 	}
+ 
+@@ -209,17 +209,17 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+ 	lh.cmd_line_ptr = grub_linux_real_target + GRUB_LINUX_CL_OFFSET;
+       else
+ 	{
+-	  lh.cl_magic = grub_cpu_to_le32_compile_time (GRUB_LINUX_CL_MAGIC);
+-	  lh.cl_offset = grub_cpu_to_le32_compile_time (GRUB_LINUX_CL_OFFSET);
+-	  lh.setup_move_size = grub_cpu_to_le32_compile_time (GRUB_LINUX_CL_OFFSET
++	  lh.cl_magic = grub_cpu_to_le16_compile_time (GRUB_LINUX_CL_MAGIC);
++	  lh.cl_offset = grub_cpu_to_le16_compile_time (GRUB_LINUX_CL_OFFSET);
++	  lh.setup_move_size = grub_cpu_to_le16_compile_time (GRUB_LINUX_CL_OFFSET
+ 						 + maximal_cmdline_size);
+ 	}
+     }
+   else
+     {
+       /* Your kernel is quite old...  */
+-      lh.cl_magic = grub_cpu_to_le32_compile_time (GRUB_LINUX_CL_MAGIC);
+-      lh.cl_offset = grub_cpu_to_le32_compile_time (GRUB_LINUX_CL_OFFSET);
++      lh.cl_magic = grub_cpu_to_le16_compile_time (GRUB_LINUX_CL_MAGIC);
++      lh.cl_offset = grub_cpu_to_le16_compile_time (GRUB_LINUX_CL_OFFSET);
+ 
+       setup_sects = GRUB_LINUX_DEFAULT_SETUP_SECTS;
+ 
+diff --git a/grub-core/loader/i386/xen_file.c b/grub-core/loader/i386/xen_file.c
+index ff23235f0..583621890 100644
+--- a/grub-core/loader/i386/xen_file.c
++++ b/grub-core/loader/i386/xen_file.c
+@@ -38,8 +38,8 @@ grub_xen_file (grub_file_t file)
+   if (grub_file_read (file, &lh, sizeof (lh)) != sizeof (lh))
+     goto fail;
+ 
+-  if (lh.boot_flag != grub_cpu_to_le16 (0xaa55)
+-      || lh.header != grub_cpu_to_le32 (GRUB_LINUX_MAGIC_SIGNATURE)
++  if (lh.boot_flag != grub_cpu_to_le16_compile_time (0xaa55)
++      || lh.header != grub_cpu_to_le32_compile_time (GRUB_LINUX_MAGIC_SIGNATURE)
+       || grub_le_to_cpu16 (lh.version) < 0x0208)
+     {
+       grub_error (GRUB_ERR_BAD_OS, "version too old for xen boot");
+diff --git a/grub-core/net/arp.c b/grub-core/net/arp.c
+index d62d0cc1e..8cc390b0e 100644
+--- a/grub-core/net/arp.c
++++ b/grub-core/net/arp.c
+@@ -81,11 +81,11 @@ grub_net_arp_send_request (struct grub_net_network_level_interface *inf,
+     return err;
+ 
+   arp_header = (struct arphdr *) nb.data;
+-  arp_header->hrd = grub_cpu_to_be16 (GRUB_NET_ARPHRD_ETHERNET);
++  arp_header->hrd = grub_cpu_to_be16_compile_time (GRUB_NET_ARPHRD_ETHERNET);
+   arp_header->hln = 6;
+   arp_header->pro = grub_cpu_to_be16 (etherpro);
+   arp_header->pln = addrlen;
+-  arp_header->op = grub_cpu_to_be16 (ARP_REQUEST);
++  arp_header->op = grub_cpu_to_be16_compile_time (ARP_REQUEST);
+   aux = (grub_uint8_t *) arp_header + sizeof (*arp_header);
+   /* Sender hardware address.  */
+   grub_memcpy (aux, &inf->hwaddress.mac, 6);
+diff --git a/grub-core/net/bootp.c b/grub-core/net/bootp.c
+index 46ce8135a..b4b8159cd 100644
+--- a/grub-core/net/bootp.c
++++ b/grub-core/net/bootp.c
+@@ -767,8 +767,8 @@ grub_cmd_bootp (struct grub_command *cmd __attribute__ ((unused)),
+ 	  grub_netbuff_push (nb, sizeof (*udph));
+ 
+ 	  udph = (struct udphdr *) nb->data;
+-	  udph->src = grub_cpu_to_be16 (68);
+-	  udph->dst = grub_cpu_to_be16 (67);
++	  udph->src = grub_cpu_to_be16_compile_time (68);
++	  udph->dst = grub_cpu_to_be16_compile_time (67);
+ 	  udph->chksum = 0;
+ 	  udph->len = grub_cpu_to_be16 (nb->tail - nb->data);
+ 	  target.type = GRUB_NET_NETWORK_LEVEL_PROTOCOL_IPV4;
+diff --git a/grub-core/net/ip.c b/grub-core/net/ip.c
+index c6971f9fc..5a6095444 100644
+--- a/grub-core/net/ip.c
++++ b/grub-core/net/ip.c
+@@ -611,7 +611,7 @@ grub_net_send_ip6_packet (struct grub_net_network_level_interface *inf,
+   grub_netbuff_push (nb, sizeof (*iph));
+   iph = (struct ip6hdr *) nb->data;
+ 
+-  iph->version_class_flow = grub_cpu_to_be32 ((6 << 28));
++  iph->version_class_flow = grub_cpu_to_be32_compile_time ((6 << 28));
+   iph->len = grub_cpu_to_be16 (nb->tail - nb->data - sizeof (*iph));
+   iph->protocol = proto;
+   iph->ttl = 0xff;
+diff --git a/grub-core/net/net.c b/grub-core/net/net.c
+index 36fc0d8b2..fc6f714bf 100644
+--- a/grub-core/net/net.c
++++ b/grub-core/net/net.c
+@@ -306,7 +306,7 @@ grub_net_ipv6_get_link_local (struct grub_net_card *card,
+     return NULL;
+ 
+   addr.type = GRUB_NET_NETWORK_LEVEL_PROTOCOL_IPV6;
+-  addr.ipv6[0] = grub_cpu_to_be64 (0xfe80ULL << 48);
++  addr.ipv6[0] = grub_cpu_to_be64_compile_time (0xfe80ULL << 48);
+   addr.ipv6[1] = grub_net_ipv6_get_id (hwaddr);
+ 
+   FOR_NET_NETWORK_LEVEL_INTERFACES (inf)
+diff --git a/grub-core/net/tftp.c b/grub-core/net/tftp.c
+index 8632339de..3931884c6 100644
+--- a/grub-core/net/tftp.c
++++ b/grub-core/net/tftp.c
+@@ -149,7 +149,7 @@ ack (tftp_data_t data, grub_uint64_t block)
+     return err;
+ 
+   tftph_ack = (struct tftphdr *) nb_ack.data;
+-  tftph_ack->opcode = grub_cpu_to_be16 (TFTP_ACK);
++  tftph_ack->opcode = grub_cpu_to_be16_compile_time (TFTP_ACK);
+   tftph_ack->u.ack.block = grub_cpu_to_be16 (block);
+ 
+   err = grub_net_send_udp_packet (data->sock, &nb_ack);
+@@ -352,7 +352,7 @@ tftp_open (struct grub_file *file, const char *filename)
+   rrq = (char *) tftph->u.rrq;
+   rrqlen = 0;
+ 
+-  tftph->opcode = grub_cpu_to_be16 (TFTP_RRQ);
++  tftph->opcode = grub_cpu_to_be16_compile_time (TFTP_RRQ);
+ 
+   /* Copy and normalize the filename to work-around issues on some tftp
+      servers when file names are being matched for remapping. */
+@@ -469,8 +469,8 @@ tftp_close (struct grub_file *file)
+       if (!err)
+ 	{
+ 	  tftph = (struct tftphdr *) nb_err.data;
+-	  tftph->opcode = grub_cpu_to_be16 (TFTP_ERROR);
+-	  tftph->u.err.errcode = grub_cpu_to_be16 (TFTP_EUNDEF);
++	  tftph->opcode = grub_cpu_to_be16_compile_time (TFTP_ERROR);
++	  tftph->u.err.errcode = grub_cpu_to_be16_compile_time (TFTP_EUNDEF);
+ 	  grub_memcpy (tftph->u.err.errmsg, "closed", sizeof ("closed"));
+ 
+ 	  err = grub_net_send_udp_packet (data->sock, &nb_err);
+diff --git a/grub-core/partmap/acorn.c b/grub-core/partmap/acorn.c
+index 7bb93d9be..c022c61dd 100644
+--- a/grub-core/partmap/acorn.c
++++ b/grub-core/partmap/acorn.c
+@@ -25,8 +25,8 @@
+ 
+ GRUB_MOD_LICENSE ("GPLv3+");
+ 
+-#define LINUX_NATIVE_MAGIC grub_cpu_to_le32 (0xdeafa1de)
+-#define LINUX_SWAP_MAGIC   grub_cpu_to_le32 (0xdeafab1e)
++#define LINUX_NATIVE_MAGIC grub_cpu_to_le32_compile_time (0xdeafa1de)
++#define LINUX_SWAP_MAGIC   grub_cpu_to_le32_compile_time (0xdeafab1e)
+ #define LINUX_MAP_ENTRIES  (512 / 12)
+ 
+ #define NONADFS_PARTITION_TYPE_LINUX 9
+diff --git a/grub-core/partmap/bsdlabel.c b/grub-core/partmap/bsdlabel.c
+index cf0f967c1..1d785906b 100644
+--- a/grub-core/partmap/bsdlabel.c
++++ b/grub-core/partmap/bsdlabel.c
+@@ -53,7 +53,7 @@ iterate_real (grub_disk_t disk, grub_disk_addr_t sector, int freebsd,
+     return grub_errno;
+ 
+   /* Check if it is valid.  */
+-  if (label.magic != grub_cpu_to_le32 (GRUB_PC_PARTITION_BSD_LABEL_MAGIC))
++  if (label.magic != grub_cpu_to_le32_compile_time (GRUB_PC_PARTITION_BSD_LABEL_MAGIC))
+     return grub_error (GRUB_ERR_BAD_PART_TABLE, "no signature");
+ 
+   /* A kludge to determine a base of be.offset.  */
+diff --git a/grub-core/partmap/gpt.c b/grub-core/partmap/gpt.c
+index 38df7b3c9..83bcba779 100644
+--- a/grub-core/partmap/gpt.c
++++ b/grub-core/partmap/gpt.c
+@@ -65,7 +65,7 @@ grub_gpt_partition_map_iterate (grub_disk_t disk,
+     return grub_errno;
+ 
+   /* Check if it is valid.  */
+-  if (mbr.signature != grub_cpu_to_le16 (GRUB_PC_PARTITION_SIGNATURE))
++  if (mbr.signature != grub_cpu_to_le16_compile_time (GRUB_PC_PARTITION_SIGNATURE))
+     return grub_error (GRUB_ERR_BAD_PART_TABLE, "no signature");
+ 
+   /* Make sure the MBR is a protective MBR and not a normal MBR.  */
+diff --git a/grub-core/partmap/msdos.c b/grub-core/partmap/msdos.c
+index 1d81a5357..46c406bff 100644
+--- a/grub-core/partmap/msdos.c
++++ b/grub-core/partmap/msdos.c
+@@ -162,7 +162,7 @@ grub_partition_msdos_iterate (grub_disk_t disk,
+ 	lastaddr = p.offset;
+ 
+       /* Check if it is valid.  */
+-      if (mbr.signature != grub_cpu_to_le16 (GRUB_PC_PARTITION_SIGNATURE))
++      if (mbr.signature != grub_cpu_to_le16_compile_time (GRUB_PC_PARTITION_SIGNATURE))
+ 	return grub_error (GRUB_ERR_BAD_PART_TABLE, "no signature");
+ 
+       for (i = 0; i < 4; i++)
+@@ -280,7 +280,7 @@ pc_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
+ 	lastaddr = offset;
+ 
+       /* Check if it is valid.  */
+-      if (mbr.signature != grub_cpu_to_le16 (GRUB_PC_PARTITION_SIGNATURE))
++      if (mbr.signature != grub_cpu_to_le16_compile_time (GRUB_PC_PARTITION_SIGNATURE))
+ 	return grub_error (GRUB_ERR_BAD_PART_TABLE, "no signature");
+ 
+       for (i = 0; i < 4; i++)
+diff --git a/grub-core/tests/video_checksum.c b/grub-core/tests/video_checksum.c
+index 491bc5573..74d5b65e5 100644
+--- a/grub-core/tests/video_checksum.c
++++ b/grub-core/tests/video_checksum.c
+@@ -288,16 +288,16 @@ grub_video_capture_write_bmp (const char *fname,
+   if (mode_info->mode_type & GRUB_VIDEO_MODE_TYPE_RGB)
+     {
+       head.filesize = grub_cpu_to_le32 (sizeof (head) + mode_info->width * mode_info->height * 3);
+-      head.bmp_off = grub_cpu_to_le32 (sizeof (head));
++      head.bmp_off = grub_cpu_to_le32_compile_time (sizeof (head));
+       head.bpp = grub_cpu_to_le16_compile_time (24);
+     }
+   else
+     {
+       head.filesize = grub_cpu_to_le32 (sizeof (head) + 3 * 256 + mode_info->width * mode_info->height);
+-      head.bmp_off = grub_cpu_to_le32 (sizeof (head) + 3 * 256);
++      head.bmp_off = grub_cpu_to_le32_compile_time (sizeof (head) + 3 * 256);
+       head.bpp = grub_cpu_to_le16_compile_time (8);
+     }
+-  head.head_size = grub_cpu_to_le32 (sizeof (head) - 14);
++  head.head_size = grub_cpu_to_le32_compile_time (sizeof (head) - 14);
+   head.width = grub_cpu_to_le16 (mode_info->width);
+   head.height = grub_cpu_to_le16 (mode_info->height);
+   head.planes = grub_cpu_to_le16_compile_time (1);
+diff --git a/util/grub-mkfont.c b/util/grub-mkfont.c
+index e6485b40f..a0cab3a93 100644
+--- a/util/grub-mkfont.c
++++ b/util/grub-mkfont.c
+@@ -704,7 +704,7 @@ write_be16_section (const char *name, grub_uint16_t data, int* offset,
+ {
+   grub_uint32_t leng;
+ 
+-  leng = grub_cpu_to_be32 (2);
++  leng = grub_cpu_to_be32_compile_time (2);
+   data = grub_cpu_to_be16 (data);
+   grub_util_write_image (name, 4, file, filename);
+   grub_util_write_image ((char *) &leng, 4, file, filename);
+@@ -801,7 +801,7 @@ write_font_pf2 (struct grub_font_info *font_info, char *output_file)
+ 
+   offset = 0;
+ 
+-  leng = grub_cpu_to_be32 (4);
++  leng = grub_cpu_to_be32_compile_time (4);
+   grub_util_write_image (FONT_FORMAT_SECTION_NAMES_FILE,
+   			 sizeof(FONT_FORMAT_SECTION_NAMES_FILE) - 1, file,
+ 			 output_file);
+diff --git a/util/grub-mklayout.c b/util/grub-mklayout.c
+index 692f88190..1a4f1b4c8 100644
+--- a/util/grub-mklayout.c
++++ b/util/grub-mklayout.c
+@@ -329,7 +329,7 @@ write_file (FILE *out, const char *fname, struct grub_keyboard_layout *layout)
+   grub_uint32_t version;
+   unsigned i;
+ 
+-  version = grub_cpu_to_le32 (GRUB_KEYBOARD_LAYOUTS_VERSION);
++  version = grub_cpu_to_le32_compile_time (GRUB_KEYBOARD_LAYOUTS_VERSION);
+   
+   for (i = 0; i < ARRAY_SIZE (layout->keyboard_map); i++)
+     layout->keyboard_map[i] = grub_cpu_to_le32(layout->keyboard_map[i]);
+diff --git a/util/mkimage.c b/util/mkimage.c
+index 26d9816e0..e6b799fd7 100644
+--- a/util/mkimage.c
++++ b/util/mkimage.c
+@@ -1528,9 +1528,10 @@ grub_install_generate_image (const char *dir, const char *prefix,
+ 	text_section->virtual_address = grub_cpu_to_le32 (header_size);
+ 	text_section->raw_data_size = grub_cpu_to_le32 (exec_size);
+ 	text_section->raw_data_offset = grub_cpu_to_le32 (header_size);
+-	text_section->characteristics = grub_cpu_to_le32 (GRUB_PE32_SCN_CNT_CODE
+-							  | GRUB_PE32_SCN_MEM_EXECUTE
+-							  | GRUB_PE32_SCN_MEM_READ);
++	text_section->characteristics = grub_cpu_to_le32_compile_time (
++						  GRUB_PE32_SCN_CNT_CODE
++						| GRUB_PE32_SCN_MEM_EXECUTE
++						| GRUB_PE32_SCN_MEM_READ);
+ 
+ 	data_section = text_section + 1;
+ 	strcpy (data_section->name, ".data");
+@@ -1539,7 +1540,7 @@ grub_install_generate_image (const char *dir, const char *prefix,
+ 	data_section->raw_data_size = grub_cpu_to_le32 (kernel_size - exec_size);
+ 	data_section->raw_data_offset = grub_cpu_to_le32 (header_size + exec_size);
+ 	data_section->characteristics
+-	  = grub_cpu_to_le32 (GRUB_PE32_SCN_CNT_INITIALIZED_DATA
++	  = grub_cpu_to_le32_compile_time (GRUB_PE32_SCN_CNT_INITIALIZED_DATA
+ 			      | GRUB_PE32_SCN_MEM_READ
+ 			      | GRUB_PE32_SCN_MEM_WRITE);
+ 
+@@ -1551,7 +1552,7 @@ grub_install_generate_image (const char *dir, const char *prefix,
+ 	bss_section->raw_data_size = 0;
+ 	bss_section->raw_data_offset = 0;
+ 	bss_section->characteristics
+-	  = grub_cpu_to_le32 (GRUB_PE32_SCN_MEM_READ
++	  = grub_cpu_to_le32_compile_time (GRUB_PE32_SCN_MEM_READ
+ 			      | GRUB_PE32_SCN_MEM_WRITE
+ 			      | GRUB_PE32_SCN_ALIGN_64BYTES
+ 			      | GRUB_PE32_SCN_CNT_INITIALIZED_DATA
+@@ -1565,7 +1566,7 @@ grub_install_generate_image (const char *dir, const char *prefix,
+ 	mods_section->raw_data_size = grub_cpu_to_le32 (reloc_addr - kernel_size - header_size);
+ 	mods_section->raw_data_offset = grub_cpu_to_le32 (header_size + kernel_size);
+ 	mods_section->characteristics
+-	  = grub_cpu_to_le32 (GRUB_PE32_SCN_CNT_INITIALIZED_DATA
++	  = grub_cpu_to_le32_compile_time (GRUB_PE32_SCN_CNT_INITIALIZED_DATA
+ 			      | GRUB_PE32_SCN_MEM_READ
+ 			      | GRUB_PE32_SCN_MEM_WRITE);
+ 
+@@ -1576,7 +1577,7 @@ grub_install_generate_image (const char *dir, const char *prefix,
+ 	reloc_section->raw_data_size = grub_cpu_to_le32 (reloc_size);
+ 	reloc_section->raw_data_offset = grub_cpu_to_le32 (reloc_addr);
+ 	reloc_section->characteristics
+-	  = grub_cpu_to_le32 (GRUB_PE32_SCN_CNT_INITIALIZED_DATA
++	  = grub_cpu_to_le32_compile_time (GRUB_PE32_SCN_CNT_INITIALIZED_DATA
+ 			      | GRUB_PE32_SCN_MEM_DISCARDABLE
+ 			      | GRUB_PE32_SCN_MEM_READ);
+ 	free (core_img);
+-- 
+2.13.0
+

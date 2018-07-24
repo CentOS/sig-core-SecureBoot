@@ -1,0 +1,43 @@
+From 6a6010d2ac3123a5e7de5e6088a26bcd21ba25a5 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Thu, 20 Apr 2017 13:29:06 -0400
+Subject: [PATCH 239/260] Don't guess /boot/efi/ as  on ppc machines
+
+This should never be trying this, and since we've consolidated the
+grubenv to always be on /boot/efi/EFI/redhat/, this code causes it to
+always make the wrong decision.
+
+Resolves: rhbz#1443809
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ util/grub-install.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/util/grub-install.c b/util/grub-install.c
+index 7d61c32be..947a2d2dd 100644
+--- a/util/grub-install.c
++++ b/util/grub-install.c
+@@ -1151,18 +1151,8 @@ main (int argc, char *argv[])
+ 	  char *d;
+ 
+ 	  is_guess = 1;
+-	  d = grub_util_path_concat (2, bootdir, "macppc");
+-	  if (!grub_util_is_directory (d))
+-	    {
+-	      free (d);
+-	      d = grub_util_path_concat (2, bootdir, "efi");
+-	    }
+ 	  /* Find the Mac HFS(+) System Partition.  */
+-	  if (!grub_util_is_directory (d))
+-	    {
+-	      free (d);
+-	      d = grub_util_path_concat (2, bootdir, "EFI");
+-	    }
++	  d = grub_util_path_concat (2, bootdir, "macppc");
+ 	  if (!grub_util_is_directory (d))
+ 	    {
+ 	      free (d);
+-- 
+2.13.0
+

@@ -1,0 +1,45 @@
+From 3b6450b338cdc9f58c74f164e9bf0a7d55d6c9a5 Mon Sep 17 00:00:00 2001
+From: Andrei Borzenkov <arvidjaar@gmail.com>
+Date: Thu, 15 Dec 2016 16:07:00 +0300
+Subject: [PATCH 218/260] efi: properly terminate filepath with NULL in
+ chainloader
+
+EFI File Path Media Device Path is defined as NULL terminated string;
+but chainloader built file paths without final NULL. This caused error
+with Secure Boot and Linux Foundation PreLoader on Acer with InsydeH20 BIOS.
+Apparently firmware failed verification with EFI_INVALID_PARAMETER which is
+considered fatal error by PreLoader.
+
+Reported and tested by Giovanni Santini <itachi.sama.amaterasu@gmail.com>
+---
+ grub-core/loader/efi/chainloader.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/grub-core/loader/efi/chainloader.c b/grub-core/loader/efi/chainloader.c
+index 522a716e3..adc856366 100644
+--- a/grub-core/loader/efi/chainloader.c
++++ b/grub-core/loader/efi/chainloader.c
+@@ -122,6 +122,8 @@ copy_file_path (grub_efi_file_path_device_path_t *fp,
+     if (*p == '/')
+       *p = '\\';
+ 
++  /* File Path is NULL terminated */
++  fp->path_name[size++] = '\0';
+   fp->header.length = size * sizeof (grub_efi_char16_t) + sizeof (*fp);
+ }
+ 
+@@ -156,8 +158,10 @@ make_file_path (grub_efi_device_path_t *dp, const char *filename)
+       d = GRUB_EFI_NEXT_DEVICE_PATH (d);
+     }
+ 
++  /* File Path is NULL terminated. Allocate space for 2 extra characters */
++  /* FIXME why we split path in two components? */
+   file_path = grub_malloc (size
+-			   + ((grub_strlen (dir_start) + 1)
++			   + ((grub_strlen (dir_start) + 2)
+ 			      * GRUB_MAX_UTF16_PER_UTF8
+ 			      * sizeof (grub_efi_char16_t))
+ 			   + sizeof (grub_efi_file_path_device_path_t) * 2);
+-- 
+2.13.0
+

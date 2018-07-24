@@ -1,0 +1,29 @@
+From 70717c72f114860c25908eabc4cb18a15ed2680e Mon Sep 17 00:00:00 2001
+From: Michael Chang <mchang@suse.com>
+Date: Mon, 3 Nov 2014 16:27:45 +0800
+Subject: [PATCH 173/260] icmp6 fix no respond to neighbor solicit message
+
+The structure size used in grub_netbuff_pull to get the pointer to
+option header is apparently wrong, which leads to subsequent range check
+failed and therefore not responding to any neighbor solicit message in my
+testing.
+---
+ grub-core/net/icmp6.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/grub-core/net/icmp6.c b/grub-core/net/icmp6.c
+index 0843a15af..782239460 100644
+--- a/grub-core/net/icmp6.c
++++ b/grub-core/net/icmp6.c
+@@ -211,7 +211,7 @@ grub_net_recv_icmp6_packet (struct grub_net_buff *nb,
+ 	if (ttl != 0xff)
+ 	  break;
+ 	nbh = (struct neighbour_solicit *) nb->data;
+-	err = grub_netbuff_pull (nb, sizeof (struct router_adv));
++	err = grub_netbuff_pull (nb, sizeof (*nbh));
+ 	if (err)
+ 	  {
+ 	    grub_netbuff_free (nb);
+-- 
+2.13.0
+

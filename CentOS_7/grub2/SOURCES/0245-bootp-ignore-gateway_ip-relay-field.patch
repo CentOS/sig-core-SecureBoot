@@ -1,0 +1,75 @@
+From d2a69d49f156c0bc3f3ba9f9cb14c21d817eadb3 Mon Sep 17 00:00:00 2001
+From: Andrei Borzenkov <arvidjaar@gmail.com>
+Date: Sun, 17 May 2015 22:38:30 +0300
+Subject: [PATCH 245/260] bootp: ignore gateway_ip (relay) field.
+
+From RFC1542:
+
+   The 'giaddr' field is rather poorly named.  It exists to facilitate
+   the transfer of BOOTREQUEST messages from a client, through BOOTP
+   relay agents, to servers on different networks than the client.
+   Similarly, it facilitates the delivery of BOOTREPLY messages from the
+   servers, through BOOTP relay agents, back to the client.  In no case
+   does it represent a general IP router to be used by the client.  A
+   BOOTP client MUST set the 'giaddr' field to zero (0.0.0.0) in all
+   BOOTREQUEST messages it generates.
+
+   A BOOTP client MUST NOT interpret the 'giaddr' field of a BOOTREPLY
+   message to be the IP address of an IP router.  A BOOTP client SHOULD
+   completely ignore the contents of the 'giaddr' field in BOOTREPLY
+   messages.
+
+Leave code ifdef'd out for the time being in case we see regression.
+
+Suggested by: Rink Springer <rink@rink.nu>
+Closes: 43396
+---
+ docs/grub.texi        | 6 ++++--
+ grub-core/net/bootp.c | 7 +++++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/docs/grub.texi b/docs/grub.texi
+index ef09c8324..98138e04d 100644
+--- a/docs/grub.texi
++++ b/docs/grub.texi
+@@ -5211,8 +5211,10 @@ by @var{shortname} which can be used to remove it (@pxref{net_del_route}).
+ Perform configuration of @var{card} using DHCP protocol. If no card name
+ is specified, try to configure all existing cards. If configuration was
+ successful, interface with name @var{card}@samp{:dhcp} and configured
+-address is added to @var{card}. If server provided gateway information in
+-DHCP ACK packet, it is added as route entry with the name @var{card}@samp{:dhcp:gw}. Additionally the following DHCP options are recognized and processed:
++address is added to @var{card}.
++@comment If server provided gateway information in
++@comment DHCP ACK packet, it is added as route entry with the name @var{card}@samp{:dhcp:gw}.
++Additionally the following DHCP options are recognized and processed:
+ 
+ @table @samp
+ @item 1 (Subnet Mask)
+diff --git a/grub-core/net/bootp.c b/grub-core/net/bootp.c
+index b4b8159cd..62d602d96 100644
+--- a/grub-core/net/bootp.c
++++ b/grub-core/net/bootp.c
+@@ -237,6 +237,12 @@ grub_net_configure_by_dhcp_ack (const char *name,
+   hwaddr.type = GRUB_NET_LINK_LEVEL_PROTOCOL_ETHERNET;
+ 
+   inter = grub_net_add_addr (name, card, &addr, &hwaddr, flags);
++#if 0
++  /* This is likely based on misunderstanding. gateway_ip refers to
++     address of BOOTP relay and should not be used after BOOTP transaction
++     is complete.
++     See RFC1542, 3.4 Interpretation of the 'giaddr' field
++   */
+   if (bp->gateway_ip)
+     {
+       grub_net_network_level_netaddress_t target;
+@@ -258,6 +264,7 @@ grub_net_configure_by_dhcp_ack (const char *name,
+       target.ipv4.masksize = 32;
+       grub_net_add_route (name, target, inter);
+     }
++#endif
+ 
+   if (size > OFFSET_OF (boot_file, bp))
+     grub_env_set_net_property (name, "boot_file", bp->boot_file,
+-- 
+2.13.0
+

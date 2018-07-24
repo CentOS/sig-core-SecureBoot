@@ -1,0 +1,39 @@
+From bbe2526e1df870813b8e787cb2528c24f28907c1 Mon Sep 17 00:00:00 2001
+From: Vladimir Serbinenko <phcoder@gmail.com>
+Date: Fri, 22 Jan 2016 14:10:30 +0100
+Subject: [PATCH 195/260] efiemu: Fix compilation failure
+
+(cherry picked from commit b6a03dfd327489d53ee07c6d7d593b99c7b7cb62)
+
+Resolves: rhbz#1288608
+---
+ grub-core/efiemu/mm.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/grub-core/efiemu/mm.c b/grub-core/efiemu/mm.c
+index 13af4ad0d..e606dbffc 100644
+--- a/grub-core/efiemu/mm.c
++++ b/grub-core/efiemu/mm.c
+@@ -410,8 +410,8 @@ fill_hook (grub_uint64_t addr, grub_uint64_t size, grub_memory_type_t type,
+ 	return grub_efiemu_add_to_mmap (addr, size,
+ 					GRUB_EFI_ACPI_MEMORY_NVS);
+ 
+-      case GRUB_MEMORY_PRAM:
+-      case GRUB_MEMORY_PMEM:
++      case GRUB_MEMORY_PERSISTENT:
++      case GRUB_MEMORY_PERSISTENT_LEGACY:
+ 	return grub_efiemu_add_to_mmap (addr, size,
+ 					GRUB_EFI_PERSISTENT_MEMORY);
+       default:
+@@ -483,7 +483,7 @@ grub_efiemu_mmap_iterate (grub_memory_hook_t hook, void *hook_data)
+ 
+       case GRUB_EFI_PERSISTENT_MEMORY:
+ 	hook (efiemu_mmap[i].physical_start, efiemu_mmap[i].num_pages * 4096,
+-	      GRUB_MEMORY_PMEM, hook_data);
++	      GRUB_MEMORY_PERSISTENT, hook_data);
+ 	break;
+ 
+       }
+-- 
+2.13.0
+

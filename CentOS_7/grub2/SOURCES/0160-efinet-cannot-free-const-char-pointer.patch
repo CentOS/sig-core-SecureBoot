@@ -1,0 +1,25 @@
+From fe8c0ca495c7225682e2af47d0d77b4ad0077f34 Mon Sep 17 00:00:00 2001
+From: Andrei Borzenkov <arvidjaar@gmail.com>
+Date: Mon, 4 May 2015 08:39:29 +0300
+Subject: [PATCH 160/260] efinet: cannot free const char * pointer
+
+---
+ grub-core/net/drivers/efi/efinet.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/grub-core/net/drivers/efi/efinet.c b/grub-core/net/drivers/efi/efinet.c
+index 810adf38f..bb863e65a 100644
+--- a/grub-core/net/drivers/efi/efinet.c
++++ b/grub-core/net/drivers/efi/efinet.c
+@@ -298,7 +298,7 @@ GRUB_MOD_FINI(efinet)
+ 	grub_net_card_unregister (card);
+ 	grub_free (card->txbuf);
+ 	grub_free (card->rcvbuf);
+-	grub_free (card->name);
++	grub_free ((char *)card->name);
+ 	grub_free (card);
+       }
+ }
+-- 
+2.13.0
+

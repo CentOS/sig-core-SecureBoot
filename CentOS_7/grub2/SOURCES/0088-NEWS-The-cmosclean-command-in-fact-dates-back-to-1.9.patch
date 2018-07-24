@@ -1,0 +1,26 @@
+From 3030e71cb8687cd628d8f03a80fb4aa4a601bec1 Mon Sep 17 00:00:00 2001
+From: Colin Watson <cjwatson@ubuntu.com>
+Date: Sat, 28 Dec 2013 02:20:27 +0000
+Subject: [PATCH 088/260] * NEWS: The cmosclean command in fact dates back to
+ 1.99. Remove mention of it from 2.02.
+
+---
+ NEWS | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/NEWS b/NEWS
+index a61df942a..f621c65de 100644
+--- a/NEWS
++++ b/NEWS
+@@ -63,6 +63,8 @@ New in 2.02:
+   * New `efifwsetup' and `lsefi' commands on EFI platforms.
+   * New `cmosdump' and `cmosset' commands on platforms with CMOS support.
+   * New command `pcidump' for PCI platforms.
++  * New `cbmemc', `coreboot_boottime', and `lscoreboot' commands on
++    coreboot.
+   * Improve opcode parsing in ACPI halt implementation.
+   * Use the TSC as a possible time source on i386-ieee1275.
+   * Merge PowerPC grub-mkrescue implementation with the common one.
+-- 
+2.13.0
+

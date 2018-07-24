@@ -1,0 +1,27 @@
+From 7e5c1057944796b36d4b6683b757ba166ad047c9 Mon Sep 17 00:00:00 2001
+From: Ignat Korchagin <ignat@cloudflare.com>
+Date: Fri, 24 Jul 2015 20:46:02 +0300
+Subject: [PATCH 236/260] efi: fix GetVariable return status check in 81ca24a
+
+GetVariable should return EFI_BUFFER_TOO_SMALL if given buffer of size
+zero; commit incorrectly checked for EFI_SUCCESS.
+---
+ grub-core/kern/efi/efi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/grub-core/kern/efi/efi.c b/grub-core/kern/efi/efi.c
+index 0cd64cdb5..101307fc7 100644
+--- a/grub-core/kern/efi/efi.c
++++ b/grub-core/kern/efi/efi.c
+@@ -243,7 +243,7 @@ grub_efi_get_variable (const char *var, const grub_efi_guid_t *guid,
+ 
+   status = efi_call_5 (r->get_variable, var16, guid, NULL, &datasize, NULL);
+ 
+-  if (status != GRUB_EFI_SUCCESS || !datasize)
++  if (status != GRUB_EFI_BUFFER_TOO_SMALL || !datasize)
+     {
+       grub_free (var16);
+       return NULL;
+-- 
+2.13.0
+

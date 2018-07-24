@@ -1,0 +1,54 @@
+From ced9279bcfc644d1b6a5e06b91974b82bdb19965 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Thu, 25 Aug 2016 14:15:29 -0400
+Subject: [PATCH 211/260] Export grub-get-kernel-settings variables
+
+Without this export, the generators for various configs never get the
+setting.
+
+Related: rhbz#1226325
+
+Signed-off-by: Peter Jones <example@example.com>
+---
+ util/grub-get-kernel-settings.in | 3 +++
+ util/grub.d/10_linux.in          | 6 +++---
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/util/grub-get-kernel-settings.in b/util/grub-get-kernel-settings.in
+index 6a68a0ef6..120462198 100644
+--- a/util/grub-get-kernel-settings.in
++++ b/util/grub-get-kernel-settings.in
+@@ -70,6 +70,9 @@ fi
+ 
+ if [ "$MAKEDEBUG" = "yes" ]; then
+     echo GRUB_LINUX_MAKE_DEBUG=true
++    echo export GRUB_LINUX_MAKE_DEBUG
+     echo GRUB_CMDLINE_LINUX_DEBUG=\"systemd.log_level=debug systemd.log_target=kmsg\"
++    echo export GRUB_CMDLINE_LINUX_DEBUG
+     echo GRUB_LINUX_DEBUG_TITLE_POSTFIX=\" with debugging\"
++    echo export GRUB_LINUX_DEBUG_TITLE_POSTFIX
+ fi
+diff --git a/util/grub.d/10_linux.in b/util/grub.d/10_linux.in
+index 0d0086d3b..bf0fb727b 100644
+--- a/util/grub.d/10_linux.in
++++ b/util/grub.d/10_linux.in
+@@ -127,13 +127,13 @@ linux_entry ()
+ 	  quoted="$(echo "$GRUB_ACTUAL_DEFAULT" | grub_quote)"
+ 	  title_correction_code="${title_correction_code}if [ \"x\$default\" = '$quoted' ]; then default='$(echo "$replacement_title" | grub_quote)'; fi;"
+       fi
++      if [ x$isdebug = xdebug ]; then
++	  title="$title${GRUB_LINUX_DEBUG_TITLE_POSTFIX}"
++      fi
+       echo "menuentry '$(echo "$title" | grub_quote)' ${CLASS} \$menuentry_id_option 'gnulinux-$version-$type-$boot_device_id' {" | sed "s/^/$submenu_indentation/"
+   else
+       echo "menuentry '$(echo "$os" | grub_quote)' ${CLASS} \$menuentry_id_option 'gnulinux-simple-$boot_device_id' {" | sed "s/^/$submenu_indentation/"
+   fi      
+-  if [ x$isdebug = xdebug ]; then
+-      title="$title${GRUB_LINUX_DEBUG_TITLE_POSTFIX}"
+-  fi
+   if [ x$type != xrecovery ] ; then
+       save_default_entry | grub_add_tab
+   fi
+-- 
+2.13.0
+

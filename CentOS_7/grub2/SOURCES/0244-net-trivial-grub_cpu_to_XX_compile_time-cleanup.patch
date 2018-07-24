@@ -1,0 +1,41 @@
+From 8db8290fc9e1e30d5c3732ae3a9c6fe9399fd5a6 Mon Sep 17 00:00:00 2001
+From: Andrei Borzenkov <arvidjaar@gmail.com>
+Date: Fri, 27 Mar 2015 18:58:57 +0300
+Subject: [PATCH 244/260] net: trivial grub_cpu_to_XX_compile_time cleanup
+
+---
+ grub-core/net/arp.c   | 2 +-
+ grub-core/net/icmp6.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/grub-core/net/arp.c b/grub-core/net/arp.c
+index 6cc580d6f..996473e10 100644
+--- a/grub-core/net/arp.c
++++ b/grub-core/net/arp.c
+@@ -80,7 +80,7 @@ grub_net_arp_send_request (struct grub_net_network_level_interface *inf,
+   arp_packet = (struct arppkt *) nb.data;
+   arp_packet->hrd = grub_cpu_to_be16_compile_time (GRUB_NET_ARPHRD_ETHERNET);
+   arp_packet->hln = 6;
+-  arp_packet->pro = grub_cpu_to_be16 (GRUB_NET_ETHERTYPE_IP);
++  arp_packet->pro = grub_cpu_to_be16_compile_time (GRUB_NET_ETHERTYPE_IP);
+   arp_packet->pln = 4;
+   arp_packet->op = grub_cpu_to_be16_compile_time (ARP_REQUEST);
+   /* Sender hardware address.  */
+diff --git a/grub-core/net/icmp6.c b/grub-core/net/icmp6.c
+index 782239460..7953e68ec 100644
+--- a/grub-core/net/icmp6.c
++++ b/grub-core/net/icmp6.c
+@@ -552,8 +552,8 @@ grub_net_icmp6_send_router_solicit (struct grub_net_network_level_interface *inf
+   struct icmp_header *icmphr;
+ 
+   multicast.type = GRUB_NET_NETWORK_LEVEL_PROTOCOL_IPV6;
+-  multicast.ipv6[0] = grub_cpu_to_be64 (0xff02ULL << 48);
+-  multicast.ipv6[1] = grub_cpu_to_be64 (0x02ULL);
++  multicast.ipv6[0] = grub_cpu_to_be64_compile_time (0xff02ULL << 48);
++  multicast.ipv6[1] = grub_cpu_to_be64_compile_time (0x02ULL);
+ 
+   err = grub_net_link_layer_resolve (inf, &multicast, &ll_multicast);
+   if (err)
+-- 
+2.13.0
+

@@ -1,0 +1,46 @@
+From cab5d30d4cb182ee9dfd03079b415e1e0285de99 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bernhard=20=C3=9Cbelacker?= <bernhardu@vr-web.de>
+Date: Mon, 20 Jul 2015 14:06:45 +0200
+Subject: [PATCH 233/260] loader/linux: Make trailer initrd entry aligned
+ again.
+
+Regression from commit:
+  loader/linux: do not pad initrd with zeroes at the end
+  a8c473288d3f0a5e17a903a5121dea1a695dda3b
+
+Wimboot fails since the change above because it expects the "trailer"
+initrd element on an aligned address.
+This issue shows only when newc_name is used and the last initrd
+entry has a not aligned size.
+---
+ grub-core/loader/linux.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/grub-core/loader/linux.c b/grub-core/loader/linux.c
+index d2cd591f6..be6fa0f4d 100644
+--- a/grub-core/loader/linux.c
++++ b/grub-core/loader/linux.c
+@@ -213,6 +213,7 @@ grub_initrd_init (int argc, char *argv[],
+ 
+   if (newc)
+     {
++      initrd_ctx->size = ALIGN_UP (initrd_ctx->size, 4);
+       initrd_ctx->size += ALIGN_UP (sizeof (struct newc_head)
+ 				    + sizeof ("TRAILER!!!") - 1, 4);
+       free_dir (root);
+@@ -290,7 +291,11 @@ grub_initrd_load (struct grub_linux_initrd_context *initrd_ctx,
+       ptr += cursize;
+     }
+   if (newc)
+-    ptr = make_header (ptr, "TRAILER!!!", sizeof ("TRAILER!!!") - 1, 0, 0);
++    {
++      grub_memset (ptr, 0, ALIGN_UP_OVERHEAD (cursize, 4));
++      ptr += ALIGN_UP_OVERHEAD (cursize, 4);
++      ptr = make_header (ptr, "TRAILER!!!", sizeof ("TRAILER!!!") - 1, 0, 0);
++    }
+   free_dir (root);
+   root = 0;
+   return GRUB_ERR_NONE;
+-- 
+2.13.0
+

@@ -1,0 +1,29 @@
+From 196938fb6e3eed1cf12d5a57a7e1f3ce59e344c3 Mon Sep 17 00:00:00 2001
+From: Andrei Borzenkov <arvidjaar@gmail.com>
+Date: Sun, 20 Mar 2016 10:32:33 +0300
+Subject: [PATCH 246/260] bootp: check that interface is not NULL in
+ configure_by_dhcp_ack
+
+grub_net_add_addr may fail with OOM and we use returned interface
+later without any checks.
+---
+ grub-core/net/bootp.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/grub-core/net/bootp.c b/grub-core/net/bootp.c
+index 62d602d96..7df7f5511 100644
+--- a/grub-core/net/bootp.c
++++ b/grub-core/net/bootp.c
+@@ -237,6 +237,9 @@ grub_net_configure_by_dhcp_ack (const char *name,
+   hwaddr.type = GRUB_NET_LINK_LEVEL_PROTOCOL_ETHERNET;
+ 
+   inter = grub_net_add_addr (name, card, &addr, &hwaddr, flags);
++  if (!inter)
++    return 0;
++
+ #if 0
+   /* This is likely based on misunderstanding. gateway_ip refers to
+      address of BOOTP relay and should not be used after BOOTP transaction
+-- 
+2.13.0
+

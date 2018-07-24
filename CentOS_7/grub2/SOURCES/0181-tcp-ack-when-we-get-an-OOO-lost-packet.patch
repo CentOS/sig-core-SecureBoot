@@ -1,0 +1,37 @@
+From 66804a1e21978713902da654ec890574efe25e7d Mon Sep 17 00:00:00 2001
+From: Josef Bacik <jbacik@fb.com>
+Date: Wed, 12 Aug 2015 08:16:22 -0700
+Subject: [PATCH 181/260] tcp: ack when we get an OOO/lost packet
+
+While adding tcp window scaling support I was finding that I'd get some packet
+loss or reordering when transferring from large distances and grub would just
+timeout.  This is because we weren't ack'ing when we got our OOO packet, so the
+sender didn't know it needed to retransmit anything, so eventually it would fill
+the window and stop transmitting, and we'd time out.  Fix this by ACK'ing when
+we don't find our next sequence numbered packet.  With this fix I no longer time
+out.  Thanks,
+
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+---
+ grub-core/net/tcp.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/grub-core/net/tcp.c b/grub-core/net/tcp.c
+index 2077f5519..fa29a2afc 100644
+--- a/grub-core/net/tcp.c
++++ b/grub-core/net/tcp.c
+@@ -882,7 +882,10 @@ grub_net_recv_tcp_packet (struct grub_net_buff *nb,
+ 	  grub_priority_queue_pop (sock->pq);
+ 	}
+       if (grub_be_to_cpu32 (tcph->seqnr) != sock->their_cur_seq)
+-	return GRUB_ERR_NONE;
++	{
++	  ack (sock);
++	  return GRUB_ERR_NONE;
++	}
+       while (1)
+ 	{
+ 	  nb_top_p = grub_priority_queue_top (sock->pq);
+-- 
+2.13.0
+

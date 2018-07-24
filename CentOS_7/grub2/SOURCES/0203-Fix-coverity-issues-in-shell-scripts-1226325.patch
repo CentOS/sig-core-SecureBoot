@@ -1,0 +1,62 @@
+From de072639935e3f8a0e43f7f5c5961a919d950406 Mon Sep 17 00:00:00 2001
+From: Robert Marshall <rmarshall@redhat.com>
+Date: Thu, 7 Jul 2016 15:05:26 -0400
+Subject: [PATCH 203/260] Fix coverity issues in shell scripts (#1226325)
+
+Remove unused variables called out by coverity. Convert a non-quoted
+variable to a quoted variable without use of deprecated backticks.
+
+Related: rhbz#1226325
+---
+ util/grub-get-kernel-settings.in | 9 ---------
+ util/grub-mkconfig.in            | 2 +-
+ 2 files changed, 1 insertion(+), 10 deletions(-)
+
+diff --git a/util/grub-get-kernel-settings.in b/util/grub-get-kernel-settings.in
+index ae0b4696d..cee8c2096 100644
+--- a/util/grub-get-kernel-settings.in
++++ b/util/grub-get-kernel-settings.in
+@@ -21,27 +21,18 @@ prefix="@prefix@"
+ exec_prefix="@exec_prefix@"
+ datarootdir="@datarootdir@"
+ 
+-prefix="@prefix@"
+ exec_prefix="@exec_prefix@"
+ sbindir="@sbindir@"
+ bindir="@bindir@"
+-sysconfdir="@sysconfdir@"
+ PACKAGE_NAME=@PACKAGE_NAME@
+ PACKAGE_VERSION=@PACKAGE_VERSION@
+-host_os=@host_os@
+ datadir="@datadir@"
+ if [ "x$pkgdatadir" = x ]; then
+     pkgdatadir="${datadir}/@PACKAGE@"
+ fi
+-grub_cfg=""
+ 
+ self=`basename $0`
+ 
+-grub_probe="${sbindir}/@grub_probe@"
+-grub_file="${bindir}/@grub_file@"
+-grub_editenv="${bindir}/@grub_editenv@"
+-grub_script_check="${bindir}/@grub_script_check@"
+-
+ export TEXTDOMAIN=@PACKAGE@
+ export TEXTDOMAINDIR="@localedir@"
+ 
+diff --git a/util/grub-mkconfig.in b/util/grub-mkconfig.in
+index aa4fdb8a3..86801aa4e 100644
+--- a/util/grub-mkconfig.in
++++ b/util/grub-mkconfig.in
+@@ -149,7 +149,7 @@ if test -f ${sysconfdir}/default/grub ; then
+   . ${sysconfdir}/default/grub
+ fi
+ 
+-eval `${grub_get_kernel_settings}` || true
++eval "$("${grub_get_kernel_settings}")" || true
+ 
+ if [ "x$GRUB_DISABLE_UUID" != "xtrue" -a -z "$GRUB_DEVICE_UUID" ]; then
+   GRUB_DEVICE_UUID="$GRUB_DEVICE_UUID_GENERATED"
+-- 
+2.13.0
+

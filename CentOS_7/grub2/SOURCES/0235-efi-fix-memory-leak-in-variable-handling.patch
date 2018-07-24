@@ -1,0 +1,38 @@
+From b2df313847417e1f9593cdcdccba488393feeff2 Mon Sep 17 00:00:00 2001
+From: Ignat Korchagin <ignat@cloudflare.com>
+Date: Thu, 23 Jul 2015 21:13:09 +0300
+Subject: [PATCH 235/260] efi: fix memory leak in variable handling
+
+---
+ grub-core/kern/efi/efi.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/grub-core/kern/efi/efi.c b/grub-core/kern/efi/efi.c
+index 453f97a75..0cd64cdb5 100644
+--- a/grub-core/kern/efi/efi.c
++++ b/grub-core/kern/efi/efi.c
+@@ -211,6 +211,7 @@ grub_efi_set_variable(const char *var, const grub_efi_guid_t *guid,
+ 			| GRUB_EFI_VARIABLE_BOOTSERVICE_ACCESS
+ 			| GRUB_EFI_VARIABLE_RUNTIME_ACCESS),
+ 		       datasize, data);
++  grub_free (var16);
+   if (status == GRUB_EFI_SUCCESS)
+     return GRUB_ERR_NONE;
+ 
+@@ -242,8 +243,11 @@ grub_efi_get_variable (const char *var, const grub_efi_guid_t *guid,
+ 
+   status = efi_call_5 (r->get_variable, var16, guid, NULL, &datasize, NULL);
+ 
+-  if (!datasize)
+-    return NULL;
++  if (status != GRUB_EFI_SUCCESS || !datasize)
++    {
++      grub_free (var16);
++      return NULL;
++    }
+ 
+   data = grub_malloc (datasize);
+   if (!data)
+-- 
+2.13.0
+

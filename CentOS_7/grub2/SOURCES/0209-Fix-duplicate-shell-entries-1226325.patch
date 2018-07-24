@@ -1,0 +1,34 @@
+From 80351cdb2246c4d213440cdee73a2284eb5fa667 Mon Sep 17 00:00:00 2001
+From: Robert Marshall <rmarshall@redhat.com>
+Date: Tue, 12 Jul 2016 10:25:16 -0400
+Subject: [PATCH 209/260] Fix duplicate shell entries (#1226325)
+
+Coverity discovered more of the same non-used shell variables that had
+appeared more than once in the file.
+
+Related: rhbz#1226325
+---
+ util/grub-get-kernel-settings.in | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/util/grub-get-kernel-settings.in b/util/grub-get-kernel-settings.in
+index cee8c2096..6a68a0ef6 100644
+--- a/util/grub-get-kernel-settings.in
++++ b/util/grub-get-kernel-settings.in
+@@ -17,13 +17,6 @@ set -e
+ # You should have received a copy of the GNU General Public License
+ # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+ 
+-prefix="@prefix@"
+-exec_prefix="@exec_prefix@"
+-datarootdir="@datarootdir@"
+-
+-exec_prefix="@exec_prefix@"
+-sbindir="@sbindir@"
+-bindir="@bindir@"
+ PACKAGE_NAME=@PACKAGE_NAME@
+ PACKAGE_VERSION=@PACKAGE_VERSION@
+ datadir="@datadir@"
+-- 
+2.13.0
+

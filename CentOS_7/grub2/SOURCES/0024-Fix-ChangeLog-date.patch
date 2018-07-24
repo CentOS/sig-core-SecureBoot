@@ -1,0 +1,25 @@
+From 5e0b14595aa213e38740d5908493999cbe4206af Mon Sep 17 00:00:00 2001
+From: Andrey Borzenkov <arvidjaar@gmail.com>
+Date: Sat, 18 Jan 2014 20:01:16 +0400
+Subject: [PATCH 024/260] Fix ChangeLog date
+
+---
+ ChangeLog | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ChangeLog b/ChangeLog
+index bdfbf44da..fcbf2207b 100644
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -2,7 +2,7 @@
+ 
+ 	* grub-core/term/terminfo.c: Recognize keys F1-F12.
+ 
+-2014-01-07  Andrey Borzenkov <arvidjaar@gmail.com>
++2014-01-18  Andrey Borzenkov <arvidjaar@gmail.com>
+ 
+ 	* configure.ac: Add support for BUILD_LDFLAGS.
+ 	* Makefile.am: Use BUILD_LDFLAGS for build time programs here ...
+-- 
+2.13.0
+

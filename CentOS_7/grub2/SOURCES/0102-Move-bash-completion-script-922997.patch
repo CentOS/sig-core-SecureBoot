@@ -1,0 +1,26 @@
+From a0b4722de7e1eaaf80a0bcd3f45515cc95b2aec8 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Wed, 3 Apr 2013 14:35:34 -0400
+Subject: [PATCH 102/260] Move bash completion script (#922997)
+
+Apparently these go in a new place now.
+---
+ util/bash-completion.d/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/util/bash-completion.d/Makefile.am b/util/bash-completion.d/Makefile.am
+index 136287cf1..0bcdb060e 100644
+--- a/util/bash-completion.d/Makefile.am
++++ b/util/bash-completion.d/Makefile.am
+@@ -6,7 +6,7 @@ EXTRA_DIST = $(bash_completion_source)
+ 
+ CLEANFILES = $(bash_completion_script) config.log
+ 
+-bashcompletiondir = $(sysconfdir)/bash_completion.d
++bashcompletiondir = $(datarootdir)/bash-completion/completions
+ bashcompletion_DATA = $(bash_completion_script)
+ 
+ $(bash_completion_script): $(bash_completion_source) $(top_builddir)/config.status
+-- 
+2.13.0
+

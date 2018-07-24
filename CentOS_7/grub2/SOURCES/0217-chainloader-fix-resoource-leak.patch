@@ -1,0 +1,38 @@
+From 1ab98376bfb9c19fcf44f826652dbfd4ac7727e6 Mon Sep 17 00:00:00 2001
+From: Andrei Borzenkov <arvidjaar@gmail.com>
+Date: Fri, 26 Jun 2015 09:25:30 +0300
+Subject: [PATCH 217/260] chainloader: fix resoource leak
+
+Found by: Coverity scan.
+CID: 96651
+---
+ grub-core/loader/efi/chainloader.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/grub-core/loader/efi/chainloader.c b/grub-core/loader/efi/chainloader.c
+index ec23cf4ed..522a716e3 100644
+--- a/grub-core/loader/efi/chainloader.c
++++ b/grub-core/loader/efi/chainloader.c
+@@ -350,9 +350,6 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
+     }
+   loaded_image->device_handle = dev_handle;
+ 
+-  grub_file_close (file);
+-  file = NULL;
+-
+   if (argc > 1)
+     {
+       int i, len;
+@@ -382,6 +379,9 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
+       loaded_image->load_options_size = len;
+     }
+ 
++  grub_file_close (file);
++  grub_device_close (dev);
++
+   grub_loader_set (grub_chainloader_boot, grub_chainloader_unload, 0);
+   return 0;
+ 
+-- 
+2.13.0
+

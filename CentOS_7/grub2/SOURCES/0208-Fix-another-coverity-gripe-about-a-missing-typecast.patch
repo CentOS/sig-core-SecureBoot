@@ -1,0 +1,33 @@
+From 5cebfafb919ac5496ab9df734c8f33a6dc688a21 Mon Sep 17 00:00:00 2001
+From: Peter Jones <pjones@redhat.com>
+Date: Tue, 12 Jul 2016 10:23:42 -0400
+Subject: [PATCH 208/260] Fix another coverity gripe about a missing typecast.
+
+Related: rhbz#1154226
+
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ grub-core/net/drivers/efi/efinet.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/grub-core/net/drivers/efi/efinet.c b/grub-core/net/drivers/efi/efinet.c
+index 2244f1403..69b0fc7a8 100644
+--- a/grub-core/net/drivers/efi/efinet.c
++++ b/grub-core/net/drivers/efi/efinet.c
+@@ -415,10 +415,9 @@ grub_efi_net_config_real (grub_efi_handle_t hnd, char **device,
+ 		     card->efi_net->mode->current_address,
+ 		     sizeof (hwaddr.mac));
+ 
+-	intf = grub_net_configure_by_dhcpv6_ack (card->name, card, 0,
+-						 &hwaddr,
+-						 &pxe_mode->dhcp_ack.dhcpv6,
+-						 1, device, path);
++	intf = grub_net_configure_by_dhcpv6_ack (card->name, card, 0, &hwaddr,
++	      (const struct grub_net_dhcpv6_packet *)&pxe_mode->dhcp_ack.dhcpv6,
++	      1, device, path);
+ 	if (intf && device && path)
+ 	  grub_dprintf ("efinet", "device: `%s' path: `%s'\n", *device, *path);
+       }
+-- 
+2.13.0
+
