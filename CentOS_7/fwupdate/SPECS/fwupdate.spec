@@ -3,9 +3,11 @@
 %global gnu_efi_version 1:3.0.5-9
 %global pesign_version 0.109-10
 
+%define pesign_name centossecureboot001
+
 Name:           fwupdate
 Version:        9
-Release:        8%{?dist}
+Release:        8%{?dist}.centos
 Summary:        Tools to manage UEFI firmware updates
 License:        GPLv2+
 URL:            https://github.com/rhinstaller/fwupdate
@@ -18,8 +20,8 @@ BuildRequires:  elfutils popt-devel git gettext pkgconfig
 BuildRequires:  systemd
 ExclusiveArch:  x86_64 aarch64
 Source0:        https://github.com/rhinstaller/fwupdate/releases/download/%{name}-%{version}/%{name}-%{version}.tar.bz2
-Source1:        securebootca.cer
-Source2:        secureboot.cer
+Source1:        centos-ca-secureboot.der
+Source2:        centossecureboot001.crt
 Patch0001: 0001-Make-SUBDIRS-overrideable.patch
 Patch0002: 0002-efi-fwupdate-make-our-mult-wrapper-get-the-type-of-U.patch
 Patch0003: 0003-Nerf-SMBIOS-functions-out-of-fwupdate.patch
@@ -89,13 +91,13 @@ setarch linux32 -B make CFLAGS="$RPM_OPT_FLAGS" libdir=%{_libdir} \
         bindir=%{_bindir} EFIDIR=%{efidir} %{?_smp_mflags} \
         SUBDIRS=efi ARCH=ia32
 mv -v efi/fwupia32.efi fwupia32.unsigned.efi
-%pesign -s -i fwupia32.unsigned.efi -o fwupia32.efi -a %{SOURCE1} -c %{SOURCE2} -n redhatsecureboot301
+%pesign -s -i fwupia32.unsigned.efi -o fwupia32.efi -a %{SOURCE1} -c %{SOURCE2} -n %{pesign_name}
 make clean
 %endif
 make CFLAGS="$RPM_OPT_FLAGS" libdir=%{_libdir} bindir=%{_bindir} \
      EFIDIR=%{efidir} %{?_smp_mflags}
 mv -v efi/fwup%{efiarch}.efi efi/fwup%{efiarch}.unsigned.efi
-%pesign -s -i efi/fwup%{efiarch}.unsigned.efi -o efi/fwup%{efiarch}.efi -a %{SOURCE1} -c %{SOURCE2} -n redhatsecureboot301
+%pesign -s -i efi/fwup%{efiarch}.unsigned.efi -o efi/fwup%{efiarch}.efi -a %{SOURCE1} -c %{SOURCE2} -n %{pesign_name} 
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -157,6 +159,9 @@ mv fwupia32.efi $RPM_BUILD_ROOT/boot/efi/EFI/%{efidir}/
 /boot/efi/EFI/%{efidir}/fwup*.efi
 
 %changelog
+* Tue Jul 24 2018 Fabian Arrotin <arrfab@centos.org> - 9.8.el7.centos
+- Rebuilt with CentOS SecureBoot keys
+
 * Fri May 19 2017 Peter Jones <pjones@redhat.com> - 9-8
 - Hopefully the last TPS related rebuild.
   Related: rhbz#1380825
