@@ -1,8 +1,8 @@
 Name:           shim-signed
 Version:        12
-Release:        1%{?dist}%{?buildid}
+Release:        2%{?dist}%{?buildid}
 Summary:        First-stage UEFI bootloader
-%define unsigned_release 1%{?dist}
+%define unsigned_release 2%{?dist}
 
 License:        BSD
 URL:            http://www.codon.org.uk/~mjg59/shim/
@@ -17,7 +17,9 @@ Patch0005: 0005-Make-all-efi_guid_t-const.patch
 Patch0006: 0006-mokutil-be-explicit-about-file-modes-in-all-cases.patch
 Patch0007: 0007-Add-bash-completion-file.patch
 
-Source1:	centos.crt
+Source1:	centossecureboot001.crt
+Source2:	centos-ca-secureboot.der
+%define pesign_name centossecureboot001
 Source10:	shimx64.efi
 Source11:	shimia32.efi
 #Source12:	shimaa64.efi
@@ -163,9 +165,9 @@ cp %{shimsrcia32} shimia32.efi
 %endif
 %endif
 %ifarch %{rh_signed_arches}
-%pesign -s -i %{unsigned_dir}shim%{efiarchlc}.efi -a %{SOURCE1} -c %{SOURCE1}  -o shim%{efiarchlc}-%{efidir}.efi
+%pesign -s -i %{unsigned_dir}shim%{efiarchlc}.efi -a %{SOURCE2} -c %{SOURCE1} -n %{pesign_name} -o shim%{efiarchlc}-%{efidir}.efi
 %ifarch x86_64
-%pesign -s -i %{unsigned_dir_ia32}shimia32.efi -a %{SOURCE1} -c %{SOURCE1}  -o shimia32-%{efidir}.efi
+%pesign -s -i %{unsigned_dir_ia32}shimia32.efi -a %{SOURCE2} -c %{SOURCE1} -n %{pesign_name} -o shimia32-%{efidir}.efi
 %endif
 %endif
 %ifarch %{rh_signed_arches}
@@ -174,12 +176,12 @@ cp shim%{efiarchlc}-%{efidir}.efi shim%{efiarchlc}.efi
 %endif
 %endif
 
-%pesign -s -i %{unsigned_dir}mm%{efiarchlc}.efi -o mm%{efiarchlc}.efi -a %{SOURCE1} -c %{SOURCE1}
-%pesign -s -i %{unsigned_dir}fb%{efiarchlc}.efi -o fb%{efiarchlc}.efi -a %{SOURCE1} -c %{SOURCE1}
+%pesign -s -i %{unsigned_dir}mm%{efiarchlc}.efi -o mm%{efiarchlc}.efi -a %{SOURCE2} -c %{SOURCE1} -n %{pesign_name}
+%pesign -s -i %{unsigned_dir}fb%{efiarchlc}.efi -o fb%{efiarchlc}.efi -a %{SOURCE2} -c %{SOURCE1} -n %{pesign_name}
 
 %ifarch x86_64
-%pesign -s -i %{unsigned_dir_ia32}mmia32.efi -o mmia32.efi -a %{SOURCE1} -c %{SOURCE1} 
-%pesign -s -i %{unsigned_dir_ia32}fbia32.efi -o fbia32.efi -a %{SOURCE1} -c %{SOURCE1} 
+%pesign -s -i %{unsigned_dir_ia32}mmia32.efi -o mmia32.efi -a %{SOURCE2} -c %{SOURCE1} -n %{pesign_name}
+%pesign -s -i %{unsigned_dir_ia32}fbia32.efi -o fbia32.efi -a %{SOURCE2} -c %{SOURCE1} -n %{pesign_name}
 %endif
 
 cd mokutil-%{mokutil_version}
@@ -193,11 +195,13 @@ install -D -d -m 0755 $RPM_BUILD_ROOT/boot/efi/EFI/%{efidir}/
 install -m 0644 shim%{efiarchlc}.efi $RPM_BUILD_ROOT/boot/efi/EFI/%{efidir}/shim%{efiarchlc}.efi
 install -m 0644 shim%{efiarchlc}-%{efidir}.efi $RPM_BUILD_ROOT/boot/efi/EFI/%{efidir}/shim%{efiarchlc}-%{efidir}.efi
 install -m 0644 mm%{efiarchlc}.efi $RPM_BUILD_ROOT/boot/efi/EFI/%{efidir}/mm%{efiarchlc}.efi
+install -m 0644 mm%{efiarchlc}.efi $RPM_BUILD_ROOT/boot/efi/EFI/%{efidir}/MokManager.efi
 install -m 0644 %{bootsrc} $RPM_BUILD_ROOT/boot/efi/EFI/%{efidir}/BOOT%{efiarch}.CSV
 
 install -D -d -m 0755 $RPM_BUILD_ROOT/boot/efi/EFI/BOOT/
 install -m 0644 shim%{efiarchlc}.efi $RPM_BUILD_ROOT/boot/efi/EFI/BOOT/BOOT%{efiarch}.EFI
 install -m 0644 fb%{efiarchlc}.efi $RPM_BUILD_ROOT/boot/efi/EFI/BOOT/fb%{efiarchlc}.efi
+install -m 0644 fb%{efiarchlc}.efi $RPM_BUILD_ROOT/boot/efi/EFI/BOOT/fallback.efi
 
 %ifarch aarch64
 # In case old boot entries aren't updated
@@ -226,9 +230,11 @@ make PREFIX=%{_prefix} LIBDIR=%{_libdir} DESTDIR=%{buildroot} install
 /boot/efi/EFI/%{efidir}/shim%{efiarchlc}.efi
 /boot/efi/EFI/%{efidir}/shim%{efiarchlc}-%{efidir}.efi
 /boot/efi/EFI/%{efidir}/mm%{efiarchlc}.efi
+/boot/efi/EFI/%{efidir}/MokManager.efi
 /boot/efi/EFI/%{efidir}/BOOT%{efiarch}.CSV
 /boot/efi/EFI/BOOT/BOOT%{efiarch}.EFI
 /boot/efi/EFI/BOOT/fb%{efiarchlc}.efi
+/boot/efi/EFI/BOOT/fallback.efi
 /boot/efi/EFI/%{efidir}/shim.efi
 
 %ifarch x86_64
@@ -252,6 +258,9 @@ make PREFIX=%{_prefix} LIBDIR=%{_libdir} DESTDIR=%{buildroot} install
 %{_datadir}/bash-completion/completions/mokutil
 
 %changelog
+* Fri Aug 24 2018 Fabian Arrotin <arrfab@centos.org> - 12-2.el7
+- Rebuilt with new shim (built with new key/cert)
+
 * Thu Aug 31 2017 Karanbir Singh <kbsingh@centos.org> - 12-1.el7.centos
 - interim build
 
